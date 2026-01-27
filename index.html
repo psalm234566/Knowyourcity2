@@ -2,61 +2,120 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>City Match - Level Edition</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Knowyourcity">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <title>Knowyourcity</title>
+    
     <script src="https://unpkg.com/mapillary-js@4.1.0/dist/mapillary.js"></script>
     <link href="https://unpkg.com/mapillary-js@4.1.0/dist/mapillary.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <style>
-        body { font-family: 'Helvetica Neue', sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; height: 100vh; overflow: hidden; }
-        #viewer-container, #map-container { width: 95vw; height: 60vh; max-width: 600px; border-radius: 20px; overflow: hidden; position: relative; margin-top: 15px; border: 2px solid #333; background: #000; display: none; }
+        /* White Mode & Ultra Light Typography */
+        html, body { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; position: fixed; 
+            background: #ffffff; 
+            color: #000000; 
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight: 100; /* Ultra Light */
+        }
+
+        body { 
+            display: flex; flex-direction: column; align-items: center; 
+            padding-top: env(safe-area-inset-top, 20px); 
+            padding-bottom: env(safe-area-inset-bottom, 30px);
+            box-sizing: border-box;
+        }
+
+        h2, button, div { font-weight: 100; } /* Strikte Durchsetzung der Schriftstärke */
+
+        #title { 
+            margin: 20px 0; 
+            font-size: 28px; 
+            letter-spacing: 2px; 
+            text-transform: lowercase; 
+        }
+        
+        #viewer-container, #map-container { 
+            width: 92vw; height: 52vh; max-width: 500px; 
+            border-radius: 30px; overflow: hidden; position: relative; 
+            border: 1px solid #eeeeee; 
+            background: #f9f9f9; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            display: none; 
+        }
+
         #mly, #map { width: 100%; height: 100%; }
         
-        #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; text-align: center; width: 100%; }
+        #start-screen, #level-screen { 
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; height: 60vh; width: 100%; 
+        }
         #level-screen { display: none; }
 
-        .city-btn, .level-btn { width: 80%; max-width: 300px; padding: 20px; margin: 10px; font-size: 20px; border-radius: 15px; border: none; cursor: pointer; font-weight: bold; color: white; text-transform: uppercase; transition: 0.2s; }
-        .city-btn:active, .level-btn:active { transform: scale(0.95); }
-        
-        .city-stuttgart { background: #f9d423; color: #333; }
-        .city-offenbach { background: #ff4b2b; }
-        .city-weimar { background: #11998e; }
-        
-        .level-btn { background: #333; border: 1px solid #555; }
-        .level-btn:hover { background: #444; border-color: #ff4b2b; }
+        /* Stadt-Buttons im White Mode */
+        .city-btn, .level-btn { 
+            width: 80%; max-width: 260px; padding: 15px; margin: 10px; 
+            font-size: 18px; border-radius: 40px; border: 1px solid #000; 
+            cursor: pointer; background: transparent; color: #000;
+            transition: all 0.3s ease;
+        }
+        .city-btn:active { background: #000; color: #fff; }
 
+        /* Swipe-Buttons mit minimalem Design */
         .buttons { display: none; gap: 40px; margin-top: 25px; }
-        button.action-btn { width: 70px; height: 70px; border: none; border-radius: 50%; cursor: pointer; font-size: 28px; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .btn-left { background: #ff4b2b; } 
-        .btn-right { background: #45b649; }
+        .action-btn { 
+            width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; 
+            font-size: 24px; background: #ffffff; color: #000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-left { color: #ff4b2b; } /* Rotes X */
+        .btn-right { color: #45b649; } /* Grünes Herz */
         
-        .btn-ui { width: auto; height: auto; border-radius: 10px; padding: 12px 25px; font-size: 16px; background: #444; margin-top: 20px; font-weight: bold; border: 1px solid #666; display: none; color: white; cursor: pointer; }
-        #info { margin-top: 10px; color: #888; font-size: 14px; text-align: center; display: none; }
-        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #45b649; z-index: 5; display: none; font-weight: bold; }
+        .ui-container { 
+            display: flex; flex-direction: column; align-items: center; 
+            width: 100%; margin-top: auto; margin-bottom: 10px;
+        }
+        
+        .btn-ui { 
+            padding: 12px 20px; font-size: 14px; border-radius: 10px; 
+            margin: 5px; border: 1px solid #000; background: transparent; 
+            color: #000; display: none; cursor: pointer; width: 70%; max-width: 220px;
+        }
+        
+        #home-btn { border-color: #ccc; color: #999; }
+        
+        #info { margin-top: 15px; color: #bbbbbb; font-size: 12px; letter-spacing: 1px; }
+        #loader { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            color: #000; z-index: 5; display: none; font-size: 12px; letter-spacing: 2px;
+        }
     </style>
 </head>
 <body>
 
-    <h2 id="title" style="margin-top: 20px;">CITY <span style="color:#45b649">MATCH</span></h2>
+    <h2 id="title">Knowyourcity</h2>
 
     <div id="start-screen">
-        <p style="color: #888; margin-bottom: 20px;">STADT WÄHLEN</p>
-        <button class="city-btn city-stuttgart" onclick="selectCity('stuttgart')">Stuttgart</button>
-        <button class="city-btn city-offenbach" onclick="showOffenbachLevels()">Offenbach</button>
-        <button class="city-btn city-weimar" onclick="selectCity('weimar')">Weimar</button>
+        <button class="city-btn" onclick="selectCity('stuttgart')">stuttgart</button>
+        <button class="city-btn" onclick="showOffenbachLevels()">offenbach</button>
+        <button class="city-btn" onclick="selectCity('weimar')">weimar</button>
     </div>
 
     <div id="level-screen">
-        <p style="color: #ff4b2b; font-weight: bold; margin-bottom: 10px;">OFFENBACH</p>
-        <p style="color: #888; margin-bottom: 20px;">LEVEL WÄHLEN</p>
-        <button class="level-btn" onclick="selectOffenbachLevel(1)">Level 1: Innenstadt</button>
-        <button class="level-btn" onclick="selectOffenbachLevel(2)">Level 2: Stadtgebiet</button>
-        <button class="level-btn" onclick="selectOffenbachLevel(3)">Level 3: Full City</button>
-        <button class="btn-ui" onclick="location.reload()" style="display:block; margin: 20px auto; background: transparent; border: none; color: #666;">← Zurück</button>
+        <button class="level-btn" onclick="selectOffenbachLevel(1)">zentrum</button>
+        <button class="level-btn" onclick="selectOffenbachLevel(2)">stadtgebiet</button>
+        <button class="level-btn" onclick="selectOffenbachLevel(3)">full city</button>
+        <button onclick="location.reload()" style="background:none; border:none; color:#999; margin-top:20px; font-size:14px;">← zurück</button>
     </div>
 
-    <div id="viewer-container"><div id="loader">SUCHE ORT...</div><div id="mly"></div></div>
+    <div id="viewer-container"><div id="loader">LADE...</div><div id="mly"></div></div>
     <div id="map-container"><div id="map"></div></div>
 
     <div class="buttons" id="action-buttons">
@@ -64,23 +123,27 @@
         <button class="action-btn btn-right" onclick="handleSwipe('right')">♥</button>
     </div>
 
-    <button id="end-btn" class="btn-ui" onclick="finishExploration()">Karte & Statistik</button>
-    <button id="back-btn" class="btn-ui" onclick="backToSwipe()">Weiter spielen</button>
-    <button id="home-btn" class="btn-ui" onclick="location.reload()" style="background:#222;">Stadt wechseln</button>
+    <div class="ui-container">
+        <button id="end-btn" class="btn-ui" onclick="finishExploration()">karte anzeigen</button>
+        <button id="back-btn" class="btn-ui" onclick="backToSwipe()">weiter spielen</button>
+        <button id="home-btn" class="btn-ui" onclick="location.href=location.pathname">stadt wechseln</button>
+    </div>
 
-    <div id="info">Lade...</div>
+    <div id="info"></div>
 
     <script>
         const ACCESS_TOKEN = 'MLY|25939357002342896|dcc9f85428352280ece926aa4f600e3d';
-        
         const CITIES = {
-            stuttgart: { name: "Stuttgart", minLng: 9.135, maxLng: 9.215, minLat: 48.755, maxLat: 48.810, center: [48.783, 9.18], zoom: 13 },
-            weimar: { name: "Weimar", minLng: 11.305, maxLng: 11.355, minLat: 50.965, maxLat: 51.002, center: [50.983, 11.328], zoom: 14 },
-            offenbach: { name: "Offenbach", center: [50.105, 8.76], zoom: 14 } // Basisdaten
+            stuttgart: { minLng: 9.135, maxLng: 9.215, minLat: 48.755, maxLat: 48.810, center: [48.783, 9.18], zoom: 12 },
+            weimar: { minLng: 11.305, maxLng: 11.355, minLat: 50.965, maxLat: 51.002, center: [50.983, 11.328], zoom: 13 },
+            offenbach: { center: [50.105, 8.76], zoom: 13 }
         };
 
-        let currentCity, mlyViewer, map, currentImgCoords;
-        let seenIDs = new Set(), ratings = [];
+        let currentCity, mlyViewer, map, currentImgCoords, seenIDs = new Set(), ratings = [];
+        let nextImageId = null, nextImageCoords = null;
+
+        const GLOBAL_STORAGE_KEY = 'knowyourcity_all_ratings';
+        const SEEN_STORAGE_KEY = 'knowyourcity_seen_images';
 
         function showOffenbachLevels() {
             document.getElementById('start-screen').style.display = 'none';
@@ -89,85 +152,71 @@
 
         function selectOffenbachLevel(lvl) {
             currentCity = Object.assign({}, CITIES.offenbach);
-            if (lvl === 1) { // Innenstadt
-                currentCity.minLng = 8.758; currentCity.maxLng = 8.768;
-                currentCity.minLat = 50.102; currentCity.maxLat = 50.108;
-                currentCity.levelName = "Innenstadt";
-            } else if (lvl === 2) { // Stadtgebiet
-                currentCity.minLng = 8.745; currentCity.maxLng = 8.780;
-                currentCity.minLat = 50.095; currentCity.maxLat = 50.112;
-                currentCity.levelName = "Stadtgebiet";
-            } else { // Full City
-                currentCity.minLng = 8.730; currentCity.maxLng = 8.785;
-                currentCity.minLat = 50.085; currentCity.maxLat = 50.115;
-                currentCity.levelName = "Full City";
-            }
-            startEngine('offenbach_lvl' + lvl);
+            if (lvl === 1) { currentCity.minLng = 8.758; currentCity.maxLng = 8.768; currentCity.minLat = 50.102; currentCity.maxLat = 50.108; }
+            else if (lvl === 2) { currentCity.minLng = 8.745; currentCity.maxLng = 8.780; currentCity.minLat = 50.095; currentCity.maxLat = 50.112; }
+            else { currentCity.minLng = 8.730; currentCity.maxLng = 8.785; currentCity.minLat = 50.085; currentCity.maxLat = 50.115; }
+            startEngine();
         }
 
-        function selectCity(key) {
-            currentCity = CITIES[key];
-            currentCity.levelName = "";
-            startEngine(key);
-        }
+        function selectCity(key) { currentCity = CITIES[key]; startEngine(); }
 
-        function startEngine(storageKey) {
+        function startEngine() {
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('level-screen').style.display = 'none';
             document.getElementById('viewer-container').style.display = 'block';
             document.getElementById('action-buttons').style.display = 'flex';
             document.getElementById('end-btn').style.display = 'inline-block';
-            document.getElementById('info').style.display = 'block';
-            
-            const titleSuffix = currentCity.levelName ? ` <small style="font-size:12px; color:#888;">${currentCity.levelName}</small>` : "";
-            document.getElementById('title').innerHTML = `${currentCity.name.toUpperCase()}${titleSuffix}`;
-            
-            seenIDs = new Set(JSON.parse(localStorage.getItem(storageKey + '_seen_v5')) || []);
-            ratings = JSON.parse(localStorage.getItem(storageKey + '_ratings_v5')) || [];
-            currentCity.storageKey = storageKey;
-            
-            updateInfo();
-            findRandomImage();
+            seenIDs = new Set(JSON.parse(localStorage.getItem(SEEN_STORAGE_KEY)) || []);
+            ratings = JSON.parse(localStorage.getItem(GLOBAL_STORAGE_KEY)) || [];
+            loadInitialImage();
         }
 
-        async function findRandomImage() {
+        async function loadInitialImage() {
             document.getElementById('loader').style.display = 'block';
+            await findNextImageInBg();
+            if (nextImageId) useNextImage();
+        }
+
+        async function findNextImageInBg() {
             const randLng = Math.random() * (currentCity.maxLng - currentCity.minLng) + currentCity.minLng;
             const randLat = Math.random() * (currentCity.maxLat - currentCity.minLat) + currentCity.minLat;
-            const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry&bbox=${randLng-0.002},${randLat-0.002},${randLng+0.002},${randLat+0.002}&limit=5`;
-
+            const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry&bbox=${randLng-0.003},${randLat-0.003},${randLng+0.003},${randLat+0.003}&limit=10`;
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                const nextImg = data.data.find(img => !seenIDs.has(img.id));
-                if (nextImg) {
-                    currentImgCoords = nextImg.geometry.coordinates;
-                    displayImage(nextImg.id);
-                } else { findRandomImage(); }
-            } catch (e) { setTimeout(findRandomImage, 1000); }
+                const candidate = data.data.find(img => !seenIDs.has(img.id));
+                if (candidate) {
+                    nextImageId = candidate.id;
+                    nextImageCoords = candidate.geometry.coordinates;
+                } else {
+                    await findNextImageInBg();
+                }
+            } catch (e) { setTimeout(findNextImageInBg, 1000); }
         }
 
-        function displayImage(id) {
+        function useNextImage() {
+            if (!nextImageId) return;
+            const id = nextImageId;
+            currentImgCoords = nextImageCoords;
             seenIDs.add(id);
-            localStorage.setItem(currentCity.storageKey + '_seen_v5', JSON.stringify([...seenIDs]));
+            localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify([...seenIDs]));
             if (!mlyViewer) {
                 mlyViewer = new mapillary.Viewer({ accessToken: ACCESS_TOKEN, container: 'mly', imageId: id, component: { cover: false, direction: false, sequence: false } });
-                mlyViewer.on('image', () => document.getElementById('loader').style.display = 'none');
-            } else { mlyViewer.moveTo(id).then(() => document.getElementById('loader').style.display = 'none').catch(findRandomImage); }
-            updateInfo();
+                mlyViewer.on('image', () => { document.getElementById('loader').style.display = 'none'; findNextImageInBg(); });
+            } else {
+                mlyViewer.moveTo(id).then(() => { document.getElementById('loader').style.display = 'none'; findNextImageInBg(); });
+            }
+            document.getElementById('info').innerText = `${ratings.length} orte bewertet`;
+            nextImageId = null;
         }
 
         function handleSwipe(dir) {
             if (currentImgCoords) {
                 ratings.push({ lng: currentImgCoords[0], lat: currentImgCoords[1], color: dir === 'right' ? '#45b649' : '#ff4b2b' });
-                localStorage.setItem(currentCity.storageKey + '_ratings_v5', JSON.stringify(ratings));
+                localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(ratings));
             }
-            document.getElementById('viewer-container').style.opacity = '0.3';
-            findRandomImage().then(() => document.getElementById('viewer-container').style.opacity = '1');
-        }
-
-        function updateInfo() {
-            document.getElementById('info').innerText = `${seenIDs.size} Orte bewertet`;
+            if (nextImageId) useNextImage();
+            else document.getElementById('loader').style.display = 'block';
         }
 
         function finishExploration() {
@@ -177,15 +226,20 @@
             document.getElementById('map-container').style.display = 'block';
             document.getElementById('back-btn').style.display = 'inline-block';
             document.getElementById('home-btn').style.display = 'inline-block';
-
             if (!map) {
-                map = L.map('map');
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+                map = L.map('map', { zoomControl: false });
+                // Light Mode Map Tiles
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
-            map.setView(currentCity.center, currentCity.zoom);
-            setTimeout(() => map.invalidateSize(), 200);
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
-            ratings.forEach(p => L.circleMarker([p.lat, p.lng], { radius: 12, fillColor: p.color, color: "transparent", weight: 0, fillOpacity: 0.4 }).addTo(map));
+            const markerGroup = [];
+            ratings.forEach(p => {
+                L.circleMarker([p.lat, p.lng], { radius: 7, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.8 }).addTo(map);
+                markerGroup.push([p.lat, p.lng]);
+            });
+            if (markerGroup.length > 0) map.fitBounds(markerGroup, { padding: [50, 50] });
+            else map.setView(currentCity.center, currentCity.zoom);
+            setTimeout(() => map.invalidateSize(), 200);
         }
 
         function backToSwipe() {
