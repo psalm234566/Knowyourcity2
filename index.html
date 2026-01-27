@@ -15,14 +15,13 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <style>
-        /* White Mode & Ultra Light Typography */
         html, body { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             overflow: hidden; position: fixed; 
             background: #ffffff; 
             color: #000000; 
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-weight: 100; /* Ultra Light */
+            font-weight: 100; 
         }
 
         body { 
@@ -32,7 +31,7 @@
             box-sizing: border-box;
         }
 
-        h2, button, div { font-weight: 100; } /* Strikte Durchsetzung der Schriftstärke */
+        h2, button, div { font-weight: 100; } 
 
         #title { 
             margin: 20px 0; 
@@ -58,16 +57,15 @@
         }
         #level-screen { display: none; }
 
-        /* Stadt-Buttons im White Mode */
         .city-btn, .level-btn { 
             width: 80%; max-width: 260px; padding: 15px; margin: 10px; 
             font-size: 18px; border-radius: 40px; border: 1px solid #000; 
             cursor: pointer; background: transparent; color: #000;
             transition: all 0.3s ease;
+            text-transform: lowercase;
         }
         .city-btn:active { background: #000; color: #fff; }
 
-        /* Swipe-Buttons mit minimalem Design */
         .buttons { display: none; gap: 40px; margin-top: 25px; }
         .action-btn { 
             width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; 
@@ -75,8 +73,8 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
             display: flex; align-items: center; justify-content: center;
         }
-        .btn-left { color: #ff4b2b; } /* Rotes X */
-        .btn-right { color: #45b649; } /* Grünes Herz */
+        .btn-left { color: #ff4b2b; } 
+        .btn-right { color: #45b649; } 
         
         .ui-container { 
             display: flex; flex-direction: column; align-items: center; 
@@ -87,11 +85,12 @@
             padding: 12px 20px; font-size: 14px; border-radius: 10px; 
             margin: 5px; border: 1px solid #000; background: transparent; 
             color: #000; display: none; cursor: pointer; width: 70%; max-width: 220px;
+            text-transform: lowercase;
         }
         
         #home-btn { border-color: #ccc; color: #999; }
         
-        #info { margin-top: 15px; color: #bbbbbb; font-size: 12px; letter-spacing: 1px; }
+        #info { margin-top: 15px; color: #bbbbbb; font-size: 12px; letter-spacing: 1px; text-transform: lowercase; }
         #loader { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             color: #000; z-index: 5; display: none; font-size: 12px; letter-spacing: 2px;
@@ -100,11 +99,12 @@
 </head>
 <body>
 
-    <h2 id="title">Knowyourcity</h2>
+    <h2 id="title">knowyourcity</h2>
 
     <div id="start-screen">
         <button class="city-btn" onclick="selectCity('stuttgart')">stuttgart</button>
         <button class="city-btn" onclick="showOffenbachLevels()">offenbach</button>
+        <button class="city-btn" onclick="selectCity('mainz')">mainz</button>
         <button class="city-btn" onclick="selectCity('weimar')">weimar</button>
     </div>
 
@@ -115,7 +115,7 @@
         <button onclick="location.reload()" style="background:none; border:none; color:#999; margin-top:20px; font-size:14px;">← zurück</button>
     </div>
 
-    <div id="viewer-container"><div id="loader">LADE...</div><div id="mly"></div></div>
+    <div id="viewer-container"><div id="loader">lade...</div><div id="mly"></div></div>
     <div id="map-container"><div id="map"></div></div>
 
     <div class="buttons" id="action-buttons">
@@ -136,7 +136,8 @@
         const CITIES = {
             stuttgart: { minLng: 9.135, maxLng: 9.215, minLat: 48.755, maxLat: 48.810, center: [48.783, 9.18], zoom: 12 },
             weimar: { minLng: 11.305, maxLng: 11.355, minLat: 50.965, maxLat: 51.002, center: [50.983, 11.328], zoom: 13 },
-            offenbach: { center: [50.105, 8.76], zoom: 13 }
+            offenbach: { center: [50.105, 8.76], zoom: 13 },
+            mainz: { minLng: 8.245, maxLng: 8.285, minLat: 49.990, maxLat: 50.015, center: [50.000, 8.265], zoom: 13 }
         };
 
         let currentCity, mlyViewer, map, currentImgCoords, seenIDs = new Set(), ratings = [];
@@ -171,12 +172,6 @@
             loadInitialImage();
         }
 
-        async function loadInitialImage() {
-            document.getElementById('loader').style.display = 'block';
-            await findNextImageInBg();
-            if (nextImageId) useNextImage();
-        }
-
         async function findNextImageInBg() {
             const randLng = Math.random() * (currentCity.maxLng - currentCity.minLng) + currentCity.minLng;
             const randLat = Math.random() * (currentCity.maxLat - currentCity.minLat) + currentCity.minLat;
@@ -188,9 +183,7 @@
                 if (candidate) {
                     nextImageId = candidate.id;
                     nextImageCoords = candidate.geometry.coordinates;
-                } else {
-                    await findNextImageInBg();
-                }
+                } else { await findNextImageInBg(); }
             } catch (e) { setTimeout(findNextImageInBg, 1000); }
         }
 
@@ -208,6 +201,12 @@
             }
             document.getElementById('info').innerText = `${ratings.length} orte bewertet`;
             nextImageId = null;
+        }
+
+        async function loadInitialImage() {
+            document.getElementById('loader').style.display = 'block';
+            await findNextImageInBg();
+            if (nextImageId) useNextImage();
         }
 
         function handleSwipe(dir) {
@@ -228,7 +227,6 @@
             document.getElementById('home-btn').style.display = 'inline-block';
             if (!map) {
                 map = L.map('map', { zoomControl: false });
-                // Light Mode Map Tiles
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
