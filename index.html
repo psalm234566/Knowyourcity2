@@ -22,20 +22,38 @@
         body { display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 20px); box-sizing: border-box; }
         #title { margin: 20px 0; font-size: 28px; letter-spacing: 2px; text-transform: lowercase; }
         
-        #viewer-container, #map-container { 
+        #viewer-container { 
+            width: 92vw; height: 52vh; max-width: 500px; 
+            border-radius: 30px; position: relative; 
+            display: none; perspective: 1000px;
+        }
+
+        #map-container {
             width: 92vw; height: 52vh; max-width: 500px; 
             border-radius: 30px; overflow: hidden; position: relative; 
             border: 1px solid #eeeeee; background: #f9f9f9; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            display: none; 
+            display: none;
         }
 
-        #swipe-card { width: 100%; height: 100%; position: relative; transition: transform 0.3s ease, opacity 0.3s ease; touch-action: none; }
-        #static-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        .card { 
+            width: 100%; height: 100%; 
+            position: absolute; top: 0; left: 0;
+            border-radius: 30px; overflow: hidden;
+            border: 1px solid #eeeeee; background: #f9f9f9; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            touch-action: none;
+        }
+
+        /* Das hintere Bild ist leicht verkleinert für den Tiefeneffekt */
+        #back-card { z-index: 1; transform: scale(0.95); opacity: 0.8; }
+        #top-card { z-index: 2; }
+
+        .card img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         
-        #swipe-card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
-        #swipe-card.swipe-left::after { background: rgba(255, 75, 43, 0.4); opacity: 1; }
-        #swipe-card.swipe-right::after { background: rgba(69, 182, 73, 0.4); opacity: 1; }
+        #top-card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+        #top-card.swipe-left::after { background: rgba(255, 75, 43, 0.4); opacity: 1; }
+        #top-card.swipe-right::after { background: rgba(69, 182, 73, 0.4); opacity: 1; }
 
         #map { width: 100%; height: 100%; }
         #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; width: 100%; }
@@ -48,14 +66,12 @@
         .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 30px; }
         .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; }
         
-        /* Popup Styling */
         .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; }
         .leaflet-popup-content { margin: 0 !important; width: 250px !important; }
         .popup-img { width: 100%; height: 170px; object-fit: cover; display: block; }
         
         .popup-controls { display: flex; width: 100%; height: 50px; border-top: 1px solid #eee; }
-        .popup-vote-btn { flex: 1; border: none; background: white; cursor: pointer; font-size: 18px; transition: background 0.2s; }
-        .popup-vote-btn:active { background: #f0f0f0; }
+        .popup-vote-btn { flex: 1; border: none; background: white; cursor: pointer; font-size: 18px; }
         .popup-vote-btn.left { color: #ff4b2b; border-right: 1px solid #eee; }
         .popup-vote-btn.right { color: #45b649; }
     </style>
@@ -79,9 +95,8 @@
     </div>
 
     <div id="viewer-container">
-        <div id="swipe-card">
-            <img id="static-img" src="" alt="lade...">
-        </div>
+        <div id="back-card" class="card"><img id="back-img" src="" alt=""></div>
+        <div id="top-card" class="card"><img id="top-img" src="" alt="lade..."></div>
     </div>
     
     <div id="map-container"><div id="map"></div></div>
@@ -106,30 +121,116 @@
             mainz: { minLng: 8.230, maxLng: 8.290, minLat: 49.980, maxLat: 50.015, center: [50.000, 8.265], zoom: 13 }
         };
 
-        let currentCity, map, ratings = [], currentImg = null;
-        let card, hammer;
+        let currentCity, map, ratings = [];
+        let topCardData = null, backCardData = null;
+        let hammer;
 
         function initSwipe() {
-            card = document.getElementById('swipe-card');
+            const el = document.getElementById('top-card');
             if (hammer) hammer.destroy();
-            hammer = new Hammer(card);
+            hammer = new Hammer(el);
             hammer.on('pan', (e) => {
-                card.style.transition = 'none';
-                card.style.transform = `translateX(${e.deltaX}px) rotate(${e.deltaX / 20}deg)`;
-                if (e.deltaX > 50) card.className = 'swipe-right';
-                else if (e.deltaX < -50) card.className = 'swipe-left';
-                else card.className = '';
+                el.style.transition = 'none';
+                el.style.transform = `translateX(${e.deltaX}px) rotate(${e.deltaX / 20}deg)`;
+                
+                // Hintergrundkarte skalieren während des Swipes
+                const scale = Math.min(0.95 + (Math.abs(e.deltaX) / 1000), 1);
+                document.getElementById('back-card').style.transform = `scale(${scale})`;
+                document.getElementById('back-card').style.opacity = 0.8 + (Math.abs(e.deltaX) / 1000);
+
+                if (e.deltaX > 50) el.className = 'card swipe-right';
+                else if (e.deltaX < -50) el.className = 'card swipe-left';
+                else el.className = 'card';
             });
 
             hammer.on('panend', (e) => {
                 if (e.deltaX > 120) handleDecision('right');
                 else if (e.deltaX < -120) handleDecision('left');
                 else {
-                    card.style.transition = 'transform 0.3s ease';
-                    card.style.transform = '';
-                    card.className = '';
+                    el.style.transition = 'transform 0.3s ease';
+                    el.style.transform = '';
+                    el.className = 'card';
+                    document.getElementById('back-card').style.transform = 'scale(0.95)';
                 }
             });
+        }
+
+        async function getMapillaryImage() {
+            const randLng = Math.random() * (currentCity.maxLng - currentCity.minLng) + currentCity.minLng;
+            const randLat = Math.random() * (currentCity.maxLat - currentCity.minLat) + currentCity.minLat;
+            const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry,thumb_1024_url&bbox=${randLng-0.005},${randLat-0.005},${randLng+0.005},${randLat+0.005}&limit=1`;
+            
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.data && data.data.length > 0) {
+                    const imgInfo = data.data[0];
+                    const imgRes = await fetch(imgInfo.thumb_1024_url);
+                    const blob = await imgRes.blob();
+                    return {
+                        id: imgInfo.id,
+                        coords: imgInfo.geometry.coordinates,
+                        localUrl: URL.createObjectURL(blob)
+                    };
+                }
+            } catch (e) {}
+            return getMapillaryImage(); // Rekursion falls kein Bild gefunden
+        }
+
+        async function startEngine() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('level-screen').style.display = 'none';
+            document.getElementById('viewer-container').style.display = 'block';
+            document.getElementById('action-buttons').style.display = 'flex';
+            document.getElementById('end-btn').style.display = 'inline-block';
+            
+            // Erstes und zweites Bild laden
+            topCardData = await getMapillaryImage();
+            document.getElementById('top-img').src = topCardData.localUrl;
+            initSwipe();
+            
+            backCardData = await getMapillaryImage();
+            document.getElementById('back-img').src = backCardData.localUrl;
+        }
+
+        async function handleDecision(dir) {
+            if (!topCardData) return;
+
+            // Bewertung speichern
+            ratings.push({ 
+                id: Date.now(),
+                lng: topCardData.coords[0], 
+                lat: topCardData.coords[1], 
+                color: dir === 'right' ? '#45b649' : '#ff4b2b',
+                imgUrl: topCardData.localUrl 
+            });
+            
+            // Animation für Top Card
+            const el = document.getElementById('top-card');
+            el.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
+            el.style.transform = `translateX(${dir === 'right' ? 600 : -600}px) rotate(${dir === 'right' ? 45 : -45}deg)`;
+            el.style.opacity = '0';
+            
+            // Nach der Animation: Karten tauschen
+            setTimeout(async () => {
+                // Das alte hintere Bild wird das neue vordere
+                topCardData = backCardData;
+                document.getElementById('top-img').src = topCardData.localUrl;
+                
+                // Reset Top Card Position
+                el.style.transition = 'none';
+                el.style.transform = '';
+                el.style.opacity = '1';
+                el.className = 'card';
+                
+                // Reset Back Card Style
+                document.getElementById('back-card').style.transform = 'scale(0.95)';
+                document.getElementById('back-card').style.opacity = '0.8';
+
+                // Neues Hinteres Bild laden
+                backCardData = await getMapillaryImage();
+                document.getElementById('back-img').src = backCardData.localUrl;
+            }, 400);
         }
 
         function showOffenbachLevels() {
@@ -147,63 +248,6 @@
 
         function selectCity(key) { currentCity = CITIES[key]; startEngine(); }
 
-        function startEngine() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('level-screen').style.display = 'none';
-            document.getElementById('viewer-container').style.display = 'block';
-            document.getElementById('action-buttons').style.display = 'flex';
-            document.getElementById('end-btn').style.display = 'inline-block';
-            ratings = []; 
-            initSwipe();
-            fetchNewImage();
-        }
-
-        async function fetchNewImage() {
-            const randLng = Math.random() * (currentCity.maxLng - currentCity.minLng) + currentCity.minLng;
-            const randLat = Math.random() * (currentCity.maxLat - currentCity.minLat) + currentCity.minLat;
-            const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry,thumb_1024_url&bbox=${randLng-0.005},${randLat-0.005},${randLng+0.005},${randLat+0.005}&limit=1`;
-            
-            try {
-                const res = await fetch(url);
-                const data = await res.json();
-                if (data.data && data.data.length > 0) {
-                    const imgData = data.data[0];
-                    const imgRes = await fetch(imgData.thumb_1024_url);
-                    const blob = await imgRes.blob();
-                    const localUrl = URL.createObjectURL(blob);
-                    
-                    currentImg = { 
-                        id: imgData.id, 
-                        coords: imgData.geometry.coordinates,
-                        localUrl: localUrl 
-                    };
-                    
-                    document.getElementById('static-img').src = localUrl;
-                    card.style.transition = 'none';
-                    card.style.transform = '';
-                    card.style.opacity = '1';
-                    card.className = '';
-                } else { fetchNewImage(); }
-            } catch (e) { setTimeout(fetchNewImage, 1000); }
-        }
-
-        function handleDecision(dir) {
-            if (!currentImg) return;
-            ratings.push({ 
-                id: Date.now(), // Eindeutige ID für die Bewertung
-                lng: currentImg.coords[0], 
-                lat: currentImg.coords[1], 
-                color: dir === 'right' ? '#45b649' : '#ff4b2b',
-                imgUrl: currentImg.localUrl 
-            });
-            
-            card.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
-            card.style.transform = `translateX(${dir === 'right' ? 500 : -500}px) rotate(${dir === 'right' ? 30 : -30}deg)`;
-            card.style.opacity = '0';
-            
-            setTimeout(fetchNewImage, 300);
-        }
-
         function finishExploration() {
             document.getElementById('viewer-container').style.display = 'none';
             document.getElementById('action-buttons').style.display = 'none';
@@ -219,36 +263,23 @@
             setTimeout(() => { map.invalidateSize(); renderMarkers(); }, 200);
         }
 
-        // Funktion zum Aktualisieren einer bestehenden Bewertung
         window.updateRating = function(id, newColor) {
-            const rating = ratings.find(r => r.id === id);
-            if (rating) {
-                rating.color = newColor;
-                renderMarkers();
-                map.closePopup();
-            }
+            const r = ratings.find(x => x.id === id);
+            if (r) { r.color = newColor; renderMarkers(); map.closePopup(); }
         };
 
         function renderMarkers() {
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
             const coords = [];
             ratings.forEach(p => {
-                const marker = L.circleMarker([p.lat, p.lng], { 
-                    radius: 12, 
-                    fillColor: p.color, 
-                    color: "#fff", 
-                    weight: 3, 
-                    fillOpacity: 1 
-                }).addTo(map);
-                
-                const content = `
+                const marker = L.circleMarker([p.lat, p.lng], { radius: 12, fillColor: p.color, color: "#fff", weight: 3, fillOpacity: 1 }).addTo(map);
+                marker.bindPopup(`
                     <img src="${p.imgUrl}" class="popup-img">
                     <div class="popup-controls">
                         <button class="popup-vote-btn left" onclick="updateRating(${p.id}, '#ff4b2b')">✕</button>
                         <button class="popup-vote-btn right" onclick="updateRating(${p.id}, '#45b649')">♥</button>
                     </div>
-                `;
-                marker.bindPopup(content);
+                `);
                 coords.push([p.lat, p.lng]);
             });
             if (coords.length > 0) map.fitBounds(coords, { padding: [50, 50] });
