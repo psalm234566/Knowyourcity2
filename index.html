@@ -3,9 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Knowyourcity">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>knowyourcity</title>
+
+    <title>Knowyourcity</title>
     
+    <script src="https://unpkg.com/mapillary-js@4.1.0/dist/mapillary.js"></script>
+    <link href="https://unpkg.com/mapillary-js@4.1.0/dist/mapillary.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
@@ -14,42 +19,51 @@
             margin: 0; padding: 0; width: 100%; height: 100%; 
             overflow: hidden; position: fixed; 
             background: #ffffff; color: #000; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            font-weight: 200; 
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight: 100; 
         }
 
-        body { display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 20px); box-sizing: border-box; }
+        body { display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 20px); padding-bottom: env(safe-area-inset-bottom, 30px); box-sizing: border-box; }
         #title { margin: 20px 0; font-size: 28px; letter-spacing: 2px; text-transform: lowercase; }
         
         #viewer-container, #map-container { 
-            width: 92vw; height: 55vh; max-width: 500px; 
+            width: 92vw; height: 52vh; max-width: 500px; 
             border-radius: 30px; overflow: hidden; position: relative; 
             border: 1px solid #eeeeee; background: #f9f9f9; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             display: none; 
         }
 
-        /* Statisches Bild statt Viewer */
-        #static-image { width: 100%; height: 100%; object-fit: cover; display: block; }
-        #map { width: 100%; height: 100%; }
+        #mly, #map { width: 100%; height: 100%; }
         
         #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; width: 100%; }
         #level-screen { display: none; }
 
-        .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; text-transform: lowercase; }
+        .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; transition: all 0.3s ease; text-transform: lowercase; font-weight: 100; }
         
         .buttons { display: none; gap: 40px; margin-top: 25px; }
-        .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; box-shadow: 0 5px 15px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; }
+        .btn-left { color: #ff4b2b; } .btn-right { color: #45b649; } 
         
-        .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 30px; }
-        .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; }
+        .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 10px; }
+        .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 10px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; font-weight: 100; }
         
-        .leaflet-popup-content-wrapper { border-radius: 15px; padding: 0; overflow: hidden; }
-        .leaflet-popup-content { margin: 0 !important; width: 220px !important; }
-        .popup-img-container { width: 220px; height: 150px; background: #eee; }
-        .popup-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .popup-nav { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-        .popup-btn-text { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #000; background: #fff; font-size: 12px; cursor: pointer; text-transform: lowercase; }
+        #home-btn { border-color: #ccc; color: #999; }
+        #info { margin-top: 15px; color: #bbbbbb; font-size: 12px; letter-spacing: 1px; text-transform: lowercase; }
+        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #000; z-index: 5; display: none; font-size: 12px; letter-spacing: 2px; }
+
+        /* Popup Styling für Mini-StreetView */
+        .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; }
+        .leaflet-popup-content { margin: 0; width: 250px !important; }
+        .mini-mly-container { width: 250px; height: 180px; background: #eee; }
+        .popup-nav { padding: 10px; display: flex; flex-direction: column; gap: 5px; background: #fff; }
+        .popup-btn-text {
+            width: 100%; padding: 8px; border-radius: 12px; border: 1px solid #000;
+            background: #fff; font-family: "Helvetica Neue", sans-serif; font-weight: 100;
+            font-size: 12px; cursor: pointer; text-transform: lowercase;
+        }
+        .p-green { border-color: #45b649; color: #45b649; }
+        .p-red { border-color: #ff4b2b; color: #ff4b2b; }
     </style>
 </head>
 <body>
@@ -67,15 +81,15 @@
         <button class="level-btn" onclick="selectOffenbachLevel(1)">zentrum</button>
         <button class="level-btn" onclick="selectOffenbachLevel(2)">stadtgebiet</button>
         <button class="level-btn" onclick="selectOffenbachLevel(3)">full city</button>
-        <button onclick="location.reload()" style="background:none; border:none; color:#999; margin-top:20px;">← zurück</button>
+        <button onclick="location.reload()" style="background:none; border:none; color:#999; margin-top:20px; font-size:14px;">← zurück</button>
     </div>
 
-    <div id="viewer-container"><img id="static-image" src=""></div>
+    <div id="viewer-container"><div id="loader">lade...</div><div id="mly"></div></div>
     <div id="map-container"><div id="map"></div></div>
 
     <div class="buttons" id="action-buttons">
-        <button class="action-btn" style="color:#ff4b2b" onclick="handleSwipe('left')">✕</button>
-        <button class="action-btn" style="color:#45b649" onclick="handleSwipe('right')">♥</button>
+        <button class="action-btn btn-left" onclick="handleSwipe('left')">✕</button>
+        <button class="action-btn btn-right" onclick="handleSwipe('right')">♥</button>
     </div>
 
     <div class="ui-container">
@@ -83,6 +97,8 @@
         <button id="back-btn" class="btn-ui" onclick="backToSwipe()">weiter spielen</button>
         <button id="home-btn" class="btn-ui" onclick="location.href=location.pathname">stadt wechseln</button>
     </div>
+
+    <div id="info"></div>
 
     <script>
         const ACCESS_TOKEN = 'MLY|25939357002342896|dcc9f85428352280ece926aa4f600e3d';
@@ -93,8 +109,12 @@
             mainz: { minLng: 8.245, maxLng: 8.285, minLat: 49.990, maxLat: 50.015, center: [50.000, 8.265], zoom: 13 }
         };
 
-        let currentCity, map, currentImgId, currentImgCoords, ratings = [];
+        let currentCity, mlyViewer, map, miniViewer, currentImgId, currentImgCoords, seenIDs = new Set(), ratings = [];
         let nextImageId = null, nextImageCoords = null;
+        let markersList = []; // Speichert alle Marker-Referenzen
+
+        const GLOBAL_STORAGE_KEY = 'knowyourcity_all_ratings';
+        const SEEN_STORAGE_KEY = 'knowyourcity_seen_images';
 
         function showOffenbachLevels() {
             document.getElementById('start-screen').style.display = 'none';
@@ -117,36 +137,44 @@
             document.getElementById('viewer-container').style.display = 'block';
             document.getElementById('action-buttons').style.display = 'flex';
             document.getElementById('end-btn').style.display = 'inline-block';
-            ratings = JSON.parse(localStorage.getItem('knowyourcity_all_ratings')) || [];
+            seenIDs = new Set(JSON.parse(localStorage.getItem(SEEN_STORAGE_KEY)) || []);
+            ratings = JSON.parse(localStorage.getItem(GLOBAL_STORAGE_KEY)) || [];
             loadInitialImage();
         }
 
         async function findNextImageInBg() {
             const randLng = Math.random() * (currentCity.maxLng - currentCity.minLng) + currentCity.minLng;
             const randLat = Math.random() * (currentCity.maxLat - currentCity.minLat) + currentCity.minLat;
-            const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry&bbox=${randLng-0.003},${randLat-0.003},${randLng+0.003},${randLat+0.003}&limit=5`;
+            const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry&bbox=${randLng-0.003},${randLat-0.003},${randLng+0.003},${randLat+0.003}&limit=10`;
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                if (data.data.length > 0) {
-                    nextImageId = data.data[0].id;
-                    nextImageCoords = data.data[0].geometry.coordinates;
-                    // Preload
-                    new Image().src = `https://images.mapillary.com/${nextImageId}/thumb-2048.jpg`;
+                const candidate = data.data.find(img => !seenIDs.has(img.id));
+                if (candidate) {
+                    nextImageId = candidate.id;
+                    nextImageCoords = candidate.geometry.coordinates;
                 } else { await findNextImageInBg(); }
-            } catch (e) { setTimeout(findNextImageInBg, 500); }
+            } catch (e) { setTimeout(findNextImageInBg, 1000); }
         }
 
         function useNextImage() {
             if (!nextImageId) return;
             currentImgId = nextImageId;
             currentImgCoords = nextImageCoords;
-            document.getElementById('static-image').src = `https://images.mapillary.com/${currentImgId}/thumb-2048.jpg`;
+            seenIDs.add(currentImgId);
+            localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify([...seenIDs]));
+            if (!mlyViewer) {
+                mlyViewer = new mapillary.Viewer({ accessToken: ACCESS_TOKEN, container: 'mly', imageId: currentImgId, component: { cover: false, direction: false, sequence: false } });
+                mlyViewer.on('image', () => { document.getElementById('loader').style.display = 'none'; findNextImageInBg(); });
+            } else {
+                mlyViewer.moveTo(currentImgId).then(() => { document.getElementById('loader').style.display = 'none'; findNextImageInBg(); });
+            }
+            document.getElementById('info').innerText = `${ratings.length} orte bewertet`;
             nextImageId = null;
-            findNextImageInBg();
         }
 
         async function loadInitialImage() {
+            document.getElementById('loader').style.display = 'block';
             await findNextImageInBg();
             if (nextImageId) useNextImage();
         }
@@ -154,9 +182,10 @@
         function handleSwipe(dir) {
             if (currentImgCoords) {
                 ratings.push({ id: currentImgId, lng: currentImgCoords[0], lat: currentImgCoords[1], color: dir === 'right' ? '#45b649' : '#ff4b2b' });
-                localStorage.setItem('knowyourcity_all_ratings', JSON.stringify(ratings));
+                localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(ratings));
             }
             if (nextImageId) useNextImage();
+            else document.getElementById('loader').style.display = 'block';
         }
 
         function finishExploration() {
@@ -166,35 +195,63 @@
             document.getElementById('map-container').style.display = 'block';
             document.getElementById('back-btn').style.display = 'inline-block';
             document.getElementById('home-btn').style.display = 'inline-block';
-
             if (!map) {
                 map = L.map('map', { zoomControl: false });
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
-            setTimeout(() => { map.invalidateSize(); initMarkers(); }, 200);
+            initMarkers();
         }
 
         function initMarkers() {
+            // Karte leeren
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
+            markersList = [];
             const coords = [];
+
             ratings.forEach((p, index) => {
-                const marker = L.circleMarker([p.lat, p.lng], { radius: 10, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(map);
-                const popupContent = `
-                    <div class="popup-img-container"><img src="https://images.mapillary.com/${p.id}/thumb-640.jpg" class="popup-img"></div>
+                const marker = L.circleMarker([p.lat, p.lng], { radius: 8, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.8 }).addTo(map);
+                
+                // Wir erstellen ein DIV als Container für den Mini-Viewer im Popup
+                const popupContent = document.createElement('div');
+                popupContent.innerHTML = `
+                    <div id="mini-mly-${index}" class="mini-mly-container"></div>
                     <div class="popup-nav">
-                        <button class="popup-btn-text" style="color:#45b649" onclick="updateRating(${index}, '#45b649')">war ich</button>
-                        <button class="popup-btn-text" style="color:#ff4b2b" onclick="updateRating(${index}, '#ff4b2b')">war ich nicht</button>
-                    </div>`;
-                marker.bindPopup(popupContent, { maxWidth: 220, closeButton: false });
+                        <button class="popup-btn-text p-green" onclick="updateRating(${index}, '#45b649')">ich war hier</button>
+                        <button class="popup-btn-text p-red" onclick="updateRating(${index}, '#ff4b2b')">war ich doch nicht</button>
+                    </div>
+                `;
+
+                marker.bindPopup(popupContent);
+                
+                // Wenn das Popup geöffnet wird, laden wir den Mini-StreetView
+                marker.on('popupopen', () => {
+                    if (miniViewer) miniViewer.remove(); // Alten Viewer löschen
+                    miniViewer = new mapillary.Viewer({
+                        accessToken: ACCESS_TOKEN,
+                        container: `mini-mly-${index}`,
+                        imageId: p.id,
+                        component: { cover: false, direction: false, sequence: false, zoom: false }
+                    });
+                });
+
+                markersList[index] = marker;
                 coords.push([p.lat, p.lng]);
             });
+
             if (coords.length > 0) map.fitBounds(coords, { padding: [50, 50] });
         }
 
-        window.updateRating = function(index, color) {
-            ratings[index].color = color;
-            localStorage.setItem('knowyourcity_all_ratings', JSON.stringify(ratings));
-            finishExploration(); // Refresh
+        // DER FIX: Ändert nur die Farbe, ohne die Karte neu zu laden
+        window.updateRating = function(index, newColor) {
+            ratings[index].color = newColor;
+            localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(ratings));
+            
+            // Marker direkt aktualisieren
+            if (markersList[index]) {
+                markersList[index].setStyle({ fillColor: newColor });
+            }
+            // Optional: Popup schließen
+            map.closePopup();
         };
 
         function backToSwipe() {
