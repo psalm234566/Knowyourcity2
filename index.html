@@ -42,6 +42,7 @@
         .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; transition: all 0.3s ease; text-transform: lowercase; font-weight: 100; }
         .city-btn:active { background: #000; color: #fff; }
 
+        /* Große Swipe Buttons */
         .buttons { display: none; gap: 40px; margin-top: 25px; }
         .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; box-shadow: 0 5px 15px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; }
         .btn-left { color: #ff4b2b; } .btn-right { color: #45b649; } 
@@ -53,14 +54,18 @@
         #info { margin-top: 15px; color: #bbbbbb; font-size: 12px; letter-spacing: 1px; text-transform: lowercase; }
         #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #000; z-index: 5; display: none; font-size: 12px; letter-spacing: 2px; }
 
-        /* Popup Styling */
-        .leaflet-popup-content { font-family: "Helvetica Neue", sans-serif; font-weight: 100; text-align: center; }
-        .popup-btn { 
-            display: block; width: 100%; margin: 8px 0; padding: 8px; 
-            border: 1px solid #000; background: white; border-radius: 5px; 
-            cursor: pointer; font-size: 12px; text-transform: lowercase;
+        /* NEU: Popup Styling mit Bild */
+        .leaflet-popup-content-wrapper { border-radius: 15px; }
+        .leaflet-popup-content { font-family: "Helvetica Neue", sans-serif; font-weight: 100; text-align: center; margin: 10px; width: 220px !important; }
+        .popup-img { width: 100%; height: 150px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; background: #eee; }
+        .popup-controls { display: flex; justify-content: center; gap: 15px; }
+        .popup-action-btn { 
+            width: 40px; height: 40px; border-radius: 50%; border: 1px solid #eee; 
+            background: #fff; font-size: 20px; display: flex; align-items: center; 
+            justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .popup-btn.green { border-color: #45b649; color: #45b649; }
+        .p-btn-left { color: #ff4b2b; }
+        .p-btn-right { color: #45b649; }
     </style>
 </head>
 <body>
@@ -203,15 +208,20 @@
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
             const markerGroup = [];
             ratings.forEach((p, index) => {
-                const marker = L.circleMarker([p.lat, p.lng], { radius: 7, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.8 }).addTo(map);
+                const marker = L.circleMarker([p.lat, p.lng], { radius: 8, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.8 }).addTo(map);
                 
-                // Popup Inhalt
-                let popupHtml = `<div><b>Ort bewertet</b><br>`;
-                popupHtml += `<button class="popup-btn" onclick="viewAgain('${p.id}')">ansehen</button>`;
-                if (p.color !== '#45b649') {
-                    popupHtml += `<button class="popup-btn green" onclick="changeRatingToGreen(${index})">♥ herz geben</button>`;
-                }
-                popupHtml += `</div>`;
+                // Thumbnail URL erstellen
+                const thumbUrl = `https://images.mapillary.com/${p.id}/thumb-320.jpg`;
+
+                // Popup mit Bild und kleinen Buttons erstellen
+                let popupHtml = `<div>`;
+                popupHtml += `<img src="${thumbUrl}" class="popup-img" alt="Vorschau">`;
+                popupHtml += `<div class="popup-controls">`;
+                // Rotes X Button
+                popupHtml += `<button class="popup-action-btn p-btn-left" onclick="updateRating(${index}, '#ff4b2b')">✕</button>`;
+                // Grünes Herz Button
+                popupHtml += `<button class="popup-action-btn p-btn-right" onclick="updateRating(${index}, '#45b649')">♥</button>`;
+                popupHtml += `</div></div>`;
                 
                 marker.bindPopup(popupHtml);
                 markerGroup.push([p.lat, p.lng]);
@@ -220,23 +230,11 @@
             else map.setView(currentCity.center, currentCity.zoom);
         }
 
-        // Funktion zum erneuten Ansehen des Bildes
-        window.viewAgain = function(id) {
-            backToSwipe();
-            document.getElementById('loader').style.display = 'block';
-            mlyViewer.moveTo(id).then(() => {
-                document.getElementById('loader').style.display = 'none';
-                currentImgId = id; // Update die aktuelle ID
-                // Wir suchen kein neues Bild, da wir uns eines ansehen
-            });
-        };
-
-        // Funktion zum Ändern der Farbe auf Grün
-        window.changeRatingToGreen = function(index) {
-            ratings[index].color = '#45b649';
+        // Funktion zum Ändern der Bewertung direkt im Popup
+        window.updateRating = function(index, newColor) {
+            ratings[index].color = newColor;
             localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(ratings));
-            map.closePopup();
-            drawMarkers(); // Karte neu zeichnen
+            drawMarkers(); // Karte neu zeichnen um Farbe zu aktualisieren
         };
 
         function backToSwipe() {
