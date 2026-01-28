@@ -34,13 +34,8 @@
             display: none; 
         }
 
-        /* Schnelles Hintergrundbild für den Viewer */
-        #mly { 
-            width: 100%; height: 100%; 
-            background-size: cover; 
-            background-position: center;
-            transition: background-image 0.2s ease-in-out;
-        }
+        #mly { width: 100%; height: 100%; background-size: cover; background-position: center; }
+        #map { width: 100%; height: 100%; }
         
         #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; width: 100%; }
         #level-screen { display: none; }
@@ -57,13 +52,14 @@
         #home-btn { border-color: #ccc; color: #999; }
         #info { margin-top: 15px; color: #bbbbbb; font-size: 12px; letter-spacing: 1px; text-transform: lowercase; }
 
-        /* Popup Styling - Optimiert für Speed */
-        .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .leaflet-popup-content { margin: 0; width: 280px !important; }
-        .popup-img-fast { width: 100%; height: 180px; object-fit: cover; display: block; background: #f0f0f0; }
-        .popup-nav { padding: 12px; display: flex; flex-direction: column; gap: 8px; background: #fff; }
+        /* Popup Styling - Maximale Geschwindigkeit */
+        .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; }
+        .leaflet-popup-content { margin: 0 !important; width: 260px !important; }
+        .popup-img-container { width: 260px; height: 170px; background: #f0f0f0; position: relative; }
+        .popup-img-fast { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .popup-nav { padding: 10px; display: flex; flex-direction: column; gap: 6px; background: #fff; }
         .popup-btn-text {
-            width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #000;
+            width: 100%; padding: 9px; border-radius: 10px; border: 1px solid #000;
             background: #fff; font-family: "Helvetica Neue", sans-serif; font-weight: 100;
             font-size: 13px; cursor: pointer; text-transform: lowercase;
         }
@@ -121,12 +117,6 @@
         const GLOBAL_STORAGE_KEY = 'knowyourcity_all_ratings';
         const SEEN_STORAGE_KEY = 'knowyourcity_seen_images';
 
-        // Preload-Funktion für Bilder
-        function preloadImage(url) {
-            const img = new Image();
-            img.src = url;
-        }
-
         function showOffenbachLevels() {
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('level-screen').style.display = 'flex';
@@ -164,8 +154,7 @@
                 if (candidate) {
                     nextImageId = candidate.id;
                     nextImageCoords = candidate.geometry.coordinates;
-                    // Sofort Thumbnail im Hintergrund vorladen
-                    preloadImage(`https://images.mapillary.com/${nextImageId}/thumb-2048.jpg`);
+                    new Image().src = `https://images.mapillary.com/${nextImageId}/thumb-2048.jpg`;
                 } else { await findNextImageInBg(); }
             } catch (e) { setTimeout(findNextImageInBg, 500); }
         }
@@ -177,21 +166,14 @@
             seenIDs.add(currentImgId);
             localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify([...seenIDs]));
 
-            // SPEED FIX: Thumbnail sofort als Hintergrund setzen
             const thumbUrl = `https://images.mapillary.com/${currentImgId}/thumb-2048.jpg`;
-            const mlyDiv = document.getElementById('mly');
-            mlyDiv.style.backgroundImage = `url(${thumbUrl})`;
+            document.getElementById('mly').style.backgroundImage = `url(${thumbUrl})`;
 
             if (!mlyViewer) {
-                mlyViewer = new mapillary.Viewer({ 
-                    accessToken: ACCESS_TOKEN, 
-                    container: 'mly', 
-                    imageId: currentImgId, 
-                    component: { cover: false, direction: false, sequence: false } 
-                });
-                mlyViewer.on('image', () => { findNextImageInBg(); });
+                mlyViewer = new mapillary.Viewer({ accessToken: ACCESS_TOKEN, container: 'mly', imageId: currentImgId, component: { cover: false, direction: false, sequence: false } });
+                mlyViewer.on('image', () => findNextImageInBg());
             } else {
-                mlyViewer.moveTo(currentImgId).then(() => { findNextImageInBg(); });
+                mlyViewer.moveTo(currentImgId).then(() => findNextImageInBg());
             }
             document.getElementById('info').innerText = `${ratings.length} orte bewertet`;
             nextImageId = null;
@@ -230,18 +212,21 @@
             const coords = [];
 
             ratings.forEach((p, index) => {
+                const thumbUrl = `https://images.mapillary.com/${p.id}/thumb-640.jpg`;
+                
+                // DER TURBO-TRICK: Bilder sofort im Hintergrund vorladen
+                const imgCache = new Image();
+                imgCache.src = thumbUrl;
+
                 const marker = L.circleMarker([p.lat, p.lng], { radius: 8, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.8 }).addTo(map);
                 
-                // SPEED FIX: Hochauflösendes statisches Bild statt interaktivem Viewer im Popup
-                const thumbUrl = `https://images.mapillary.com/${p.id}/thumb-1024.jpg`;
-                
                 const popupContent = `
-                    <div style="overflow:hidden">
+                    <div class="popup-img-container">
                         <img src="${thumbUrl}" class="popup-img-fast">
-                        <div class="popup-nav">
-                            <button class="popup-btn-text p-green" onclick="updateRating(${index}, '#45b649')">ich war hier</button>
-                            <button class="popup-btn-text p-red" onclick="updateRating(${index}, '#ff4b2b')">war ich doch nicht</button>
-                        </div>
+                    </div>
+                    <div class="popup-nav">
+                        <button class="popup-btn-text p-green" onclick="updateRating(${index}, '#45b649')">ich war hier</button>
+                        <button class="popup-btn-text p-red" onclick="updateRating(${index}, '#ff4b2b')">war ich doch nicht</button>
                     </div>
                 `;
 
@@ -256,9 +241,7 @@
         window.updateRating = function(index, newColor) {
             ratings[index].color = newColor;
             localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(ratings));
-            if (markersList[index]) {
-                markersList[index].setStyle({ fillColor: newColor });
-            }
+            if (markersList[index]) markersList[index].setStyle({ fillColor: newColor });
             map.closePopup();
         };
 
