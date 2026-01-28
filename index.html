@@ -15,8 +15,8 @@
             margin: 0; padding: 0; width: 100%; height: 100%; 
             overflow: hidden; position: fixed; 
             background: #ffffff; color: #000; 
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-weight: 100; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-weight: 200; 
         }
 
         body { display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 20px); box-sizing: border-box; }
@@ -31,28 +31,26 @@
         }
 
         #swipe-card { width: 100%; height: 100%; position: relative; transition: transform 0.3s ease, opacity 0.3s ease; touch-action: none; }
-        #static-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; }
+        #static-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         
         #swipe-card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
-        #swipe-card.swipe-left::after { background: rgba(255, 75, 43, 0.3); opacity: 1; }
-        #swipe-card.swipe-right::after { background: rgba(69, 182, 73, 0.3); opacity: 1; }
+        #swipe-card.swipe-left::after { background: rgba(255, 75, 43, 0.4); opacity: 1; }
+        #swipe-card.swipe-right::after { background: rgba(69, 182, 73, 0.4); opacity: 1; }
 
         #map { width: 100%; height: 100%; }
         #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; width: 100%; }
         #level-screen { display: none; }
-        .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; text-transform: lowercase; font-weight: 100; }
+        .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; text-transform: lowercase; }
         
         .buttons { display: none; gap: 40px; margin-top: 25px; }
         .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         
         .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 30px; }
-        .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; font-weight: 100; }
+        .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; }
         
-        /* Popup Styling */
         .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; }
         .leaflet-popup-content { margin: 0 !important; width: 250px !important; }
-        .popup-img-container { width: 100%; height: 170px; background: #eee; display: flex; align-items: center; justify-content: center; }
-        .popup-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .popup-img { width: 100%; height: 170px; object-fit: cover; display: block; }
     </style>
 </head>
 <body>
@@ -106,6 +104,7 @@
 
         function initSwipe() {
             card = document.getElementById('swipe-card');
+            if (hammer) hammer.destroy();
             hammer = new Hammer(card);
             hammer.on('pan', (e) => {
                 card.style.transition = 'none';
@@ -147,23 +146,34 @@
             document.getElementById('viewer-container').style.display = 'block';
             document.getElementById('action-buttons').style.display = 'flex';
             document.getElementById('end-btn').style.display = 'inline-block';
-            ratings = JSON.parse(localStorage.getItem('knowyourcity_all_ratings')) || [];
-            if(!hammer) initSwipe();
+            ratings = []; // Reset für die Session
+            initSwipe();
             fetchNewImage();
         }
 
         async function fetchNewImage() {
             const randLng = Math.random() * (currentCity.maxLng - currentCity.minLng) + currentCity.minLng;
             const randLat = Math.random() * (currentCity.maxLat - currentCity.minLat) + currentCity.minLat;
-            const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry,thumb_2048_url&bbox=${randLng-0.005},${randLat-0.005},${randLng+0.005},${randLat+0.005}&limit=1`;
+            const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry,thumb_1024_url&bbox=${randLng-0.005},${randLat-0.005},${randLng+0.005},${randLat+0.005}&limit=1`;
             
             try {
                 const res = await fetch(url);
                 const data = await res.json();
                 if (data.data && data.data.length > 0) {
-                    const img = data.data[0];
-                    currentImg = { id: img.id, coords: img.geometry.coordinates };
-                    document.getElementById('static-img').src = img.thumb_2048_url;
+                    const imgData = data.data[0];
+                    
+                    // PRE-FETCH: Wir laden das Bild als Blob herunter
+                    const imgRes = await fetch(imgData.thumb_1024_url);
+                    const blob = await imgRes.blob();
+                    const localUrl = URL.createObjectURL(blob);
+                    
+                    currentImg = { 
+                        id: imgData.id, 
+                        coords: imgData.geometry.coordinates,
+                        localUrl: localUrl 
+                    };
+                    
+                    document.getElementById('static-img').src = localUrl;
                     card.style.transition = 'none';
                     card.style.transform = '';
                     card.style.opacity = '1';
@@ -174,8 +184,12 @@
 
         function handleDecision(dir) {
             if (!currentImg) return;
-            ratings.push({ id: currentImg.id, lng: currentImg.coords[0], lat: currentImg.coords[1], color: dir === 'right' ? '#45b649' : '#ff4b2b' });
-            localStorage.setItem('knowyourcity_all_ratings', JSON.stringify(ratings));
+            ratings.push({ 
+                lng: currentImg.coords[0], 
+                lat: currentImg.coords[1], 
+                color: dir === 'right' ? '#45b649' : '#ff4b2b',
+                imgUrl: currentImg.localUrl 
+            });
             
             card.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
             card.style.transform = `translateX(${dir === 'right' ? 500 : -500}px) rotate(${dir === 'right' ? 30 : -30}deg)`;
@@ -203,15 +217,10 @@
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
             const coords = [];
             ratings.forEach(p => {
-                const marker = L.circleMarker([p.lat, p.lng], { radius: 10, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(map);
+                const marker = L.circleMarker([p.lat, p.lng], { radius: 12, fillColor: p.color, color: "#fff", weight: 3, fillOpacity: 1 }).addTo(map);
                 
-                // STABILE URL LOGIK FÜR POPUPS
-                const robustThumbUrl = `https://images.mapillary.com/${p.id}/thumb-640.jpg`;
-                const content = `
-                    <div class="popup-img-container">
-                        <img src="${robustThumbUrl}" class="popup-img" onerror="this.src='https://images.mapillary.com/${p.id}/thumb-320.jpg'">
-                    </div>
-                `;
+                // Wir nutzen die lokale URL, die wir vorhin mit Blob erstellt haben
+                const content = `<img src="${p.imgUrl}" class="popup-img">`;
                 marker.bindPopup(content);
                 coords.push([p.lat, p.lng]);
             });
