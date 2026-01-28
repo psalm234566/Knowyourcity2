@@ -14,8 +14,8 @@
             margin: 0; padding: 0; width: 100%; height: 100%; 
             overflow: hidden; position: fixed; 
             background: #ffffff; color: #000; 
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-weight: 100; 
+            font-family: -apple-system, system-ui, sans-serif;
+            font-weight: 200; 
         }
 
         body { display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 20px); box-sizing: border-box; }
@@ -27,9 +27,20 @@
             border: 1px solid #eeeeee; background: #f0f0f0; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             display: none; 
+            /* Verhindert jegliches Verschieben des Containers */
+            touch-action: none; 
         }
 
-        #static-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        /* Das Bild ist jetzt komplett gesperrt gegen Interaktion */
+        #static-img { 
+            width: 100%; height: 100%; object-fit: cover; display: block; 
+            pointer-events: none; 
+            user-select: none;
+            -webkit-user-drag: none;
+            -webkit-touch-callout: none;
+            touch-action: none;
+        }
+
         #map { width: 100%; height: 100%; }
         
         #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; width: 100%; }
@@ -45,7 +56,13 @@
         
         .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; }
         .leaflet-popup-content { margin: 0; width: 250px !important; }
-        .popup-img { width: 100%; height: 170px; object-fit: cover; display: block; background: #ddd; }
+        
+        /* Auch das Bild im Popup ist nun gesperrt */
+        .popup-img { 
+            width: 100%; height: 170px; object-fit: cover; display: block; 
+            pointer-events: none; 
+            touch-action: none;
+        }
         .popup-nav { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
         .popup-btn-text { width: 100%; padding: 8px; border-radius: 10px; border: 1px solid #000; background: #fff; font-size: 12px; cursor: pointer; text-transform: lowercase; }
     </style>
@@ -68,7 +85,7 @@
         <button onclick="location.reload()" style="background:none; border:none; color:#999; margin-top:20px;">← zurück</button>
     </div>
 
-    <div id="viewer-container"><img id="static-img" src="" alt="Lade Bild..."></div>
+    <div id="viewer-container"><img id="static-img" src="" alt="lade..."></div>
     <div id="map-container"><div id="map"></div></div>
 
     <div class="buttons" id="action-buttons">
@@ -121,7 +138,6 @@
         async function fetchNewImage() {
             const randLng = Math.random() * (currentCity.maxLng - currentCity.minLng) + currentCity.minLng;
             const randLat = Math.random() * (currentCity.maxLat - currentCity.minLat) + currentCity.minLat;
-            // Wir fragen Thumbnails direkt über die Graph API an, um die korrekte URL zu erhalten
             const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry,thumb_2048_url&bbox=${randLng-0.005},${randLat-0.005},${randLng+0.005},${randLat+0.005}&limit=1`;
             
             try {
@@ -164,8 +180,6 @@
             
             for (let p of ratings) {
                 const marker = L.circleMarker([p.lat, p.lng], { radius: 10, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(map);
-                
-                // Wir nutzen hier die standardisierte Thumbnail-URL für die Popups
                 const popupImgUrl = `https://graph.mapillary.com/${p.id}?access_token=${ACCESS_TOKEN}&fields=thumb_640_url`;
                 
                 marker.on('click', async () => {
