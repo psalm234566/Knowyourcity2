@@ -197,16 +197,45 @@
         }
 
         function renderMarkers() {
+            // Karte leeren
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
+            
             const coords = [];
             ratings.forEach(p => {
-                const marker = L.circleMarker([p.lat, p.lng], { radius: 10, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(map);
-                // Hier werden jetzt direkt die gespeicherten URLs für das Popup genutzt
-                const content = `<img src="${p.thumb}" class="popup-img">`;
-                marker.bindPopup(content);
+                const marker = L.circleMarker([p.lat, p.lng], { 
+                    radius: 10, 
+                    fillColor: p.color, 
+                    color: "#fff", 
+                    weight: 2, 
+                    fillOpacity: 0.9 
+                }).addTo(map);
+
+                // FIX: Wir bauen eine robuste URL, die direkt auf den Mapillary-Proxy zugreift
+                // Das verhindert das "Fragezeichen"-Problem durch abgelaufene Tokens
+                const robustThumbUrl = `https://images.mapillary.com/${p.id}/thumb-640.jpg`;
+
+                const content = `
+                    <div style="width:250px; min-height:170px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;">
+                        <img src="${robustThumbUrl}" 
+                             class="popup-img" 
+                             onerror="this.src='https://images.mapillary.com/${p.id}/thumb-320.jpg'; this.onerror=null;"
+                             style="width:100%; height:170px; object-fit:cover; display:block;">
+                    </div>
+                `;
+                
+                marker.bindPopup(content, {
+                    maxWidth: 250,
+                    minWidth: 250,
+                    className: 'custom-popup'
+                });
+
                 coords.push([p.lat, p.lng]);
             });
-            if (coords.length > 0) map.fitBounds(coords, { padding: [50, 50] });
+
+            if (coords.length > 0) {
+                map.fitBounds(coords, { padding: [50, 50] });
+            }
+        }
         }
 
         function backToSwipe() {
