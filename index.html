@@ -31,9 +31,8 @@
         }
 
         #swipe-card { width: 100%; height: 100%; position: relative; transition: transform 0.3s ease, opacity 0.3s ease; touch-action: none; }
-        #static-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        #static-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; }
         
-        /* Swipe Overlay Farben */
         #swipe-card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
         #swipe-card.swipe-left::after { background: rgba(255, 75, 43, 0.3); opacity: 1; }
         #swipe-card.swipe-right::after { background: rgba(69, 182, 73, 0.3); opacity: 1; }
@@ -41,15 +40,15 @@
         #map { width: 100%; height: 100%; }
         #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; width: 100%; }
         #level-screen { display: none; }
-        .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; text-transform: lowercase; }
+        .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; text-transform: lowercase; font-weight: 100; }
         .buttons { display: none; gap: 40px; margin-top: 25px; }
         .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 30px; }
-        .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; }
+        .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; font-weight: 100; }
         
         .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; }
-        .leaflet-popup-content { margin: 0; width: 250px !important; }
-        .popup-img { width: 100%; height: 170px; object-fit: cover; display: block; }
+        .leaflet-popup-content { margin: 0 !important; width: 250px !important; }
+        .popup-img { width: 100%; height: 170px; object-fit: cover; display: block; pointer-events: none; }
         .popup-nav { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
     </style>
 </head>
@@ -96,7 +95,7 @@
             stuttgart: { minLng: 9.135, maxLng: 9.215, minLat: 48.755, maxLat: 48.810, center: [48.783, 9.18], zoom: 12 },
             weimar: { minLng: 11.305, maxLng: 11.355, minLat: 50.965, maxLat: 51.002, center: [50.983, 11.328], zoom: 13 },
             offenbach: { center: [50.105, 8.76], zoom: 13 },
-            mainz: { minLng: 8.245, maxLng: 8.285, minLat: 49.990, maxLat: 50.015, center: [50.000, 8.265], zoom: 13 }
+            mainz: { minLng: 8.230, maxLng: 8.290, minLat: 49.980, maxLat: 50.015, center: [50.000, 8.265], zoom: 13 }
         };
 
         let currentCity, map, ratings = [], currentImg = null;
@@ -114,8 +113,8 @@
             });
 
             hammer.on('panend', (e) => {
-                if (e.deltaX > 150) handleDecision('right');
-                else if (e.deltaX < -150) handleDecision('left');
+                if (e.deltaX > 120) handleDecision('right');
+                else if (e.deltaX < -120) handleDecision('left');
                 else {
                     card.style.transition = 'transform 0.3s ease';
                     card.style.transform = '';
@@ -146,7 +145,7 @@
             document.getElementById('action-buttons').style.display = 'flex';
             document.getElementById('end-btn').style.display = 'inline-block';
             ratings = JSON.parse(localStorage.getItem('knowyourcity_all_ratings')) || [];
-            initSwipe();
+            if(!hammer) initSwipe();
             fetchNewImage();
         }
 
@@ -160,7 +159,7 @@
                 const data = await res.json();
                 if (data.data && data.data.length > 0) {
                     const img = data.data[0];
-                    currentImg = { id: img.id, coords: img.geometry.coordinates };
+                    currentImg = { id: img.id, coords: img.geometry.coordinates, url: img.thumb_2048_url };
                     document.getElementById('static-img').src = img.thumb_2048_url;
                     card.style.transition = 'none';
                     card.style.transform = '';
@@ -172,7 +171,7 @@
 
         function handleDecision(dir) {
             if (!currentImg) return;
-            ratings.push({ id: currentImg.id, lng: currentImg.coords[0], lat: currentImg.coords[1], color: dir === 'right' ? '#45b649' : '#ff4b2b' });
+            ratings.push({ id: currentImg.id, lng: currentImg.coords[0], lat: currentImg.coords[1], color: dir === 'right' ? '#45b649' : '#ff4b2b', thumb: currentImg.url });
             localStorage.setItem('knowyourcity_all_ratings', JSON.stringify(ratings));
             
             card.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
@@ -197,19 +196,16 @@
             setTimeout(() => { map.invalidateSize(); renderMarkers(); }, 200);
         }
 
-        async function renderMarkers() {
+        function renderMarkers() {
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
             const coords = [];
-            for (let p of ratings) {
+            ratings.forEach(p => {
                 const marker = L.circleMarker([p.lat, p.lng], { radius: 10, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(map);
-                const popupImgUrl = `https://graph.mapillary.com/${p.id}?access_token=${ACCESS_TOKEN}&fields=thumb_640_url`;
-                marker.on('click', async () => {
-                    const res = await fetch(popupImgUrl);
-                    const data = await res.json();
-                    marker.bindPopup(`<img src="${data.thumb_640_url}" class="popup-img">`).openPopup();
-                });
+                // Hier werden jetzt direkt die gespeicherten URLs für das Popup genutzt
+                const content = `<img src="${p.thumb}" class="popup-img">`;
+                marker.bindPopup(content);
                 coords.push([p.lat, p.lng]);
-            }
+            });
             if (coords.length > 0) map.fitBounds(coords, { padding: [50, 50] });
         }
 
