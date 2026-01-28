@@ -3,14 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Knowyourcity">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-
     <title>knowyourcity</title>
     
-    <script src="https://unpkg.com/mapillary-js@4.1.0/dist/mapillary.js"></script>
-    <link href="https://unpkg.com/mapillary-js@4.1.0/dist/mapillary.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
@@ -19,51 +14,42 @@
             margin: 0; padding: 0; width: 100%; height: 100%; 
             overflow: hidden; position: fixed; 
             background: #ffffff; color: #000; 
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-weight: 100; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            font-weight: 200; 
         }
 
-        body { display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 20px); padding-bottom: env(safe-area-inset-bottom, 30px); box-sizing: border-box; }
+        body { display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 20px); box-sizing: border-box; }
         #title { margin: 20px 0; font-size: 28px; letter-spacing: 2px; text-transform: lowercase; }
         
         #viewer-container, #map-container { 
-            width: 92vw; height: 52vh; max-width: 500px; 
+            width: 92vw; height: 55vh; max-width: 500px; 
             border-radius: 30px; overflow: hidden; position: relative; 
-            border: 1px solid #eeeeee; background: #ffffff; 
+            border: 1px solid #eeeeee; background: #f9f9f9; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             display: none; 
         }
 
-        #mly { width: 100%; height: 100%; background-size: cover; background-position: center; }
+        /* Statisches Bild statt Viewer */
+        #static-image { width: 100%; height: 100%; object-fit: cover; display: block; }
         #map { width: 100%; height: 100%; }
         
         #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; width: 100%; }
         #level-screen { display: none; }
 
-        .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; transition: all 0.2s ease; text-transform: lowercase; font-weight: 100; }
+        .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; text-transform: lowercase; }
         
         .buttons { display: none; gap: 40px; margin-top: 25px; }
-        .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; box-shadow: 0 5px 15px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         
-        .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 10px; }
-        .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 10px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; font-weight: 100; }
+        .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 30px; }
+        .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; }
         
-        #home-btn { border-color: #ccc; color: #999; }
-        #info { margin-top: 15px; color: #bbbbbb; font-size: 12px; letter-spacing: 1px; text-transform: lowercase; }
-
-        /* Popup Styling */
-        .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; }
+        .leaflet-popup-content-wrapper { border-radius: 15px; padding: 0; overflow: hidden; }
         .leaflet-popup-content { margin: 0 !important; width: 220px !important; }
-        .popup-img-container { width: 220px; height: 140px; background: #f9f9f9; }
-        .popup-img-fast { width: 100%; height: 100%; object-fit: cover; display: block; border-bottom: 1px solid #eee; }
-        .popup-nav { padding: 8px; display: flex; flex-direction: column; gap: 5px; background: #fff; }
-        .popup-btn-text {
-            width: 100%; padding: 8px; border-radius: 10px; border: 1px solid #000;
-            background: #fff; font-family: "Helvetica Neue", sans-serif; font-weight: 100;
-            font-size: 12px; cursor: pointer; text-transform: lowercase;
-        }
-        .p-green { border-color: #45b649; color: #45b649; }
-        .p-red { border-color: #ff4b2b; color: #ff4b2b; }
+        .popup-img-container { width: 220px; height: 150px; background: #eee; }
+        .popup-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .popup-nav { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .popup-btn-text { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #000; background: #fff; font-size: 12px; cursor: pointer; text-transform: lowercase; }
     </style>
 </head>
 <body>
@@ -81,10 +67,10 @@
         <button class="level-btn" onclick="selectOffenbachLevel(1)">zentrum</button>
         <button class="level-btn" onclick="selectOffenbachLevel(2)">stadtgebiet</button>
         <button class="level-btn" onclick="selectOffenbachLevel(3)">full city</button>
-        <button onclick="location.reload()" style="background:none; border:none; color:#999; margin-top:20px; font-size:14px;">← zurück</button>
+        <button onclick="location.reload()" style="background:none; border:none; color:#999; margin-top:20px;">← zurück</button>
     </div>
 
-    <div id="viewer-container"><div id="mly"></div></div>
+    <div id="viewer-container"><img id="static-image" src=""></div>
     <div id="map-container"><div id="map"></div></div>
 
     <div class="buttons" id="action-buttons">
@@ -98,8 +84,6 @@
         <button id="home-btn" class="btn-ui" onclick="location.href=location.pathname">stadt wechseln</button>
     </div>
 
-    <div id="info"></div>
-
     <script>
         const ACCESS_TOKEN = 'MLY|25939357002342896|dcc9f85428352280ece926aa4f600e3d';
         const CITIES = {
@@ -109,12 +93,8 @@
             mainz: { minLng: 8.245, maxLng: 8.285, minLat: 49.990, maxLat: 50.015, center: [50.000, 8.265], zoom: 13 }
         };
 
-        let currentCity, mlyViewer, map, currentImgId, currentImgCoords, seenIDs = new Set(), ratings = [];
+        let currentCity, map, currentImgId, currentImgCoords, ratings = [];
         let nextImageId = null, nextImageCoords = null;
-        let markersList = [];
-
-        const GLOBAL_STORAGE_KEY = 'knowyourcity_all_ratings';
-        const SEEN_STORAGE_KEY = 'knowyourcity_seen_images';
 
         function showOffenbachLevels() {
             document.getElementById('start-screen').style.display = 'none';
@@ -137,22 +117,21 @@
             document.getElementById('viewer-container').style.display = 'block';
             document.getElementById('action-buttons').style.display = 'flex';
             document.getElementById('end-btn').style.display = 'inline-block';
-            seenIDs = new Set(JSON.parse(localStorage.getItem(SEEN_STORAGE_KEY)) || []);
-            ratings = JSON.parse(localStorage.getItem(GLOBAL_STORAGE_KEY)) || [];
+            ratings = JSON.parse(localStorage.getItem('knowyourcity_all_ratings')) || [];
             loadInitialImage();
         }
 
         async function findNextImageInBg() {
             const randLng = Math.random() * (currentCity.maxLng - currentCity.minLng) + currentCity.minLng;
             const randLat = Math.random() * (currentCity.maxLat - currentCity.minLat) + currentCity.minLat;
-            const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry&bbox=${randLng-0.003},${randLat-0.003},${randLng+0.003},${randLat+0.003}&limit=10`;
+            const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry&bbox=${randLng-0.003},${randLat-0.003},${randLng+0.003},${randLat+0.003}&limit=5`;
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                const candidate = data.data.find(img => !seenIDs.has(img.id));
-                if (candidate) {
-                    nextImageId = candidate.id;
-                    nextImageCoords = candidate.geometry.coordinates;
+                if (data.data.length > 0) {
+                    nextImageId = data.data[0].id;
+                    nextImageCoords = data.data[0].geometry.coordinates;
+                    // Preload
                     new Image().src = `https://images.mapillary.com/${nextImageId}/thumb-2048.jpg`;
                 } else { await findNextImageInBg(); }
             } catch (e) { setTimeout(findNextImageInBg, 500); }
@@ -162,18 +141,9 @@
             if (!nextImageId) return;
             currentImgId = nextImageId;
             currentImgCoords = nextImageCoords;
-            seenIDs.add(currentImgId);
-            localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify([...seenIDs]));
-            document.getElementById('mly').style.backgroundImage = `url(https://images.mapillary.com/${currentImgId}/thumb-2048.jpg)`;
-
-            if (!mlyViewer) {
-                mlyViewer = new mapillary.Viewer({ accessToken: ACCESS_TOKEN, container: 'mly', imageId: currentImgId, component: { cover: false, direction: false, sequence: false } });
-                mlyViewer.on('image', () => findNextImageInBg());
-            } else {
-                mlyViewer.moveTo(currentImgId).then(() => findNextImageInBg());
-            }
-            document.getElementById('info').innerText = `${ratings.length} orte bewertet`;
+            document.getElementById('static-image').src = `https://images.mapillary.com/${currentImgId}/thumb-2048.jpg`;
             nextImageId = null;
+            findNextImageInBg();
         }
 
         async function loadInitialImage() {
@@ -184,7 +154,7 @@
         function handleSwipe(dir) {
             if (currentImgCoords) {
                 ratings.push({ id: currentImgId, lng: currentImgCoords[0], lat: currentImgCoords[1], color: dir === 'right' ? '#45b649' : '#ff4b2b' });
-                localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(ratings));
+                localStorage.setItem('knowyourcity_all_ratings', JSON.stringify(ratings));
             }
             if (nextImageId) useNextImage();
         }
@@ -196,54 +166,35 @@
             document.getElementById('map-container').style.display = 'block';
             document.getElementById('back-btn').style.display = 'inline-block';
             document.getElementById('home-btn').style.display = 'inline-block';
+
             if (!map) {
                 map = L.map('map', { zoomControl: false });
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
-            initMarkers();
+            setTimeout(() => { map.invalidateSize(); initMarkers(); }, 200);
         }
 
         function initMarkers() {
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
-            markersList = [];
             const coords = [];
-
             ratings.forEach((p, index) => {
-                const marker = L.circleMarker([p.lat, p.lng], { radius: 8, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.8 }).addTo(map);
-                
-                // KOMPROMISS: Kleineres Bild (320px) und "loading=lazy"
-                const thumbUrl = `https://images.mapillary.com/${p.id}/thumb-320.jpg`;
-                
+                const marker = L.circleMarker([p.lat, p.lng], { radius: 10, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(map);
                 const popupContent = `
-                    <div class="popup-img-container">
-                        <img src="${thumbUrl}" class="popup-img-fast" loading="lazy">
-                    </div>
+                    <div class="popup-img-container"><img src="https://images.mapillary.com/${p.id}/thumb-640.jpg" class="popup-img"></div>
                     <div class="popup-nav">
-                        <button class="popup-btn-text p-green" onclick="updateRating(${index}, '#45b649')">ich war hier</button>
-                        <button class="popup-btn-text p-red" onclick="updateRating(${index}, '#ff4b2b')">war ich doch nicht</button>
-                    </div>
-                `;
-
+                        <button class="popup-btn-text" style="color:#45b649" onclick="updateRating(${index}, '#45b649')">war ich</button>
+                        <button class="popup-btn-text" style="color:#ff4b2b" onclick="updateRating(${index}, '#ff4b2b')">war ich nicht</button>
+                    </div>`;
                 marker.bindPopup(popupContent, { maxWidth: 220, closeButton: false });
-                markersList[index] = marker;
                 coords.push([p.lat, p.lng]);
             });
-
             if (coords.length > 0) map.fitBounds(coords, { padding: [50, 50] });
-
-            // SMART PRELOAD: Lade Bilder nacheinander (nicht alle auf einmal)
-            ratings.forEach((p, i) => {
-                setTimeout(() => {
-                    new Image().src = `https://images.mapillary.com/${p.id}/thumb-320.jpg`;
-                }, i * 200); // Alle 200ms ein Bild laden -> schont die Leitung
-            });
         }
 
-        window.updateRating = function(index, newColor) {
-            ratings[index].color = newColor;
-            localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(ratings));
-            if (markersList[index]) markersList[index].setStyle({ fillColor: newColor });
-            map.closePopup();
+        window.updateRating = function(index, color) {
+            ratings[index].color = color;
+            localStorage.setItem('knowyourcity_all_ratings', JSON.stringify(ratings));
+            finishExploration(); // Refresh
         };
 
         function backToSwipe() {
