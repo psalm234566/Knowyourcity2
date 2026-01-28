@@ -9,8 +9,6 @@
 
     <title>Knowyourcity</title>
     
-    <script src="https://unpkg.com/mapillary-js@4.1.0/dist/mapillary.js"></script>
-    <link href="https://unpkg.com/mapillary-js@4.1.0/dist/mapillary.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
@@ -34,7 +32,9 @@
             display: none; 
         }
 
-        #mly, #map { width: 100%; height: 100%; }
+        /* Statisches Bild-Styling */
+        #static-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        #map { width: 100%; height: 100%; }
         
         #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; width: 100%; }
         #level-screen { display: none; }
@@ -42,7 +42,7 @@
         .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; transition: all 0.3s ease; text-transform: lowercase; font-weight: 100; }
         
         .buttons { display: none; gap: 40px; margin-top: 25px; }
-        .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; box-shadow: 0 5px 15px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; }
+        .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; box-shadow: 0 5px 15px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .btn-left { color: #ff4b2b; } .btn-right { color: #45b649; } 
         
         .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 10px; }
@@ -50,12 +50,11 @@
         
         #home-btn { border-color: #ccc; color: #999; }
         #info { margin-top: 15px; color: #bbbbbb; font-size: 12px; letter-spacing: 1px; text-transform: lowercase; }
-        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #000; z-index: 5; display: none; font-size: 12px; letter-spacing: 2px; }
 
-        /* Popup Styling für Mini-StreetView */
+        /* Popup Styling für reine Bilder */
         .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; }
         .leaflet-popup-content { margin: 0; width: 250px !important; }
-        .mini-mly-container { width: 250px; height: 180px; background: #eee; }
+        .popup-img { width: 250px; height: 180px; object-fit: cover; display: block; background: #eee; }
         .popup-nav { padding: 10px; display: flex; flex-direction: column; gap: 5px; background: #fff; }
         .popup-btn-text {
             width: 100%; padding: 8px; border-radius: 12px; border: 1px solid #000;
@@ -84,7 +83,7 @@
         <button onclick="location.reload()" style="background:none; border:none; color:#999; margin-top:20px; font-size:14px;">← zurück</button>
     </div>
 
-    <div id="viewer-container"><div id="loader">lade...</div><div id="mly"></div></div>
+    <div id="viewer-container"><img id="static-img" src=""></div>
     <div id="map-container"><div id="map"></div></div>
 
     <div class="buttons" id="action-buttons">
@@ -109,9 +108,9 @@
             mainz: { minLng: 8.245, maxLng: 8.285, minLat: 49.990, maxLat: 50.015, center: [50.000, 8.265], zoom: 13 }
         };
 
-        let currentCity, mlyViewer, map, miniViewer, currentImgId, currentImgCoords, seenIDs = new Set(), ratings = [];
+        let currentCity, map, currentImgId, currentImgCoords, seenIDs = new Set(), ratings = [];
         let nextImageId = null, nextImageCoords = null;
-        let markersList = []; // Speichert alle Marker-Referenzen
+        let markersList = [];
 
         const GLOBAL_STORAGE_KEY = 'knowyourcity_all_ratings';
         const SEEN_STORAGE_KEY = 'knowyourcity_seen_images';
@@ -153,6 +152,8 @@
                 if (candidate) {
                     nextImageId = candidate.id;
                     nextImageCoords = candidate.geometry.coordinates;
+                    // Preload für flüssigen Wechsel
+                    new Image().src = `https://images.mapillary.com/${nextImageId}/thumb-2048.jpg`;
                 } else { await findNextImageInBg(); }
             } catch (e) { setTimeout(findNextImageInBg, 1000); }
         }
@@ -163,18 +164,16 @@
             currentImgCoords = nextImageCoords;
             seenIDs.add(currentImgId);
             localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify([...seenIDs]));
-            if (!mlyViewer) {
-                mlyViewer = new mapillary.Viewer({ accessToken: ACCESS_TOKEN, container: 'mly', imageId: currentImgId, component: { cover: false, direction: false, sequence: false } });
-                mlyViewer.on('image', () => { document.getElementById('loader').style.display = 'none'; findNextImageInBg(); });
-            } else {
-                mlyViewer.moveTo(currentImgId).then(() => { document.getElementById('loader').style.display = 'none'; findNextImageInBg(); });
-            }
+            
+            // Bild einfach austauschen
+            document.getElementById('static-img').src = `https://images.mapillary.com/${currentImgId}/thumb-2048.jpg`;
+            
             document.getElementById('info').innerText = `${ratings.length} orte bewertet`;
             nextImageId = null;
+            findNextImageInBg(); // Nächstes vorbereiten
         }
 
         async function loadInitialImage() {
-            document.getElementById('loader').style.display = 'block';
             await findNextImageInBg();
             if (nextImageId) useNextImage();
         }
@@ -185,7 +184,6 @@
                 localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(ratings));
             }
             if (nextImageId) useNextImage();
-            else document.getElementById('loader').style.display = 'block';
         }
 
         function finishExploration() {
@@ -199,22 +197,20 @@
                 map = L.map('map', { zoomControl: false });
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
-            initMarkers();
+            // Karte refreshen für Leaflet Bug
+            setTimeout(() => { map.invalidateSize(); initMarkers(); }, 100);
         }
 
         function initMarkers() {
-            // Karte leeren
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
             markersList = [];
             const coords = [];
 
             ratings.forEach((p, index) => {
-                const marker = L.circleMarker([p.lat, p.lng], { radius: 8, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.8 }).addTo(map);
+                const marker = L.circleMarker([p.lat, p.lng], { radius: 10, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(map);
                 
-                // Wir erstellen ein DIV als Container für den Mini-Viewer im Popup
-                const popupContent = document.createElement('div');
-                popupContent.innerHTML = `
-                    <div id="mini-mly-${index}" class="mini-mly-container"></div>
+                const popupContent = `
+                    <img src="https://images.mapillary.com/${p.id}/thumb-640.jpg" class="popup-img">
                     <div class="popup-nav">
                         <button class="popup-btn-text p-green" onclick="updateRating(${index}, '#45b649')">ich war hier</button>
                         <button class="popup-btn-text p-red" onclick="updateRating(${index}, '#ff4b2b')">war ich doch nicht</button>
@@ -222,18 +218,6 @@
                 `;
 
                 marker.bindPopup(popupContent);
-                
-                // Wenn das Popup geöffnet wird, laden wir den Mini-StreetView
-                marker.on('popupopen', () => {
-                    if (miniViewer) miniViewer.remove(); // Alten Viewer löschen
-                    miniViewer = new mapillary.Viewer({
-                        accessToken: ACCESS_TOKEN,
-                        container: `mini-mly-${index}`,
-                        imageId: p.id,
-                        component: { cover: false, direction: false, sequence: false, zoom: false }
-                    });
-                });
-
                 markersList[index] = marker;
                 coords.push([p.lat, p.lng]);
             });
@@ -241,16 +225,12 @@
             if (coords.length > 0) map.fitBounds(coords, { padding: [50, 50] });
         }
 
-        // DER FIX: Ändert nur die Farbe, ohne die Karte neu zu laden
         window.updateRating = function(index, newColor) {
             ratings[index].color = newColor;
             localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(ratings));
-            
-            // Marker direkt aktualisieren
             if (markersList[index]) {
                 markersList[index].setStyle({ fillColor: newColor });
             }
-            // Optional: Popup schließen
             map.closePopup();
         };
 
