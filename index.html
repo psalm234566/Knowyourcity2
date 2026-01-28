@@ -18,83 +18,49 @@
         html, body { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             overflow: hidden; position: fixed; 
-            background: #ffffff; 
-            color: #000000; 
+            background: #ffffff; color: #000; 
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             font-weight: 100; 
         }
 
-        body { 
-            display: flex; flex-direction: column; align-items: center; 
-            padding-top: env(safe-area-inset-top, 20px); 
-            padding-bottom: env(safe-area-inset-bottom, 30px);
-            box-sizing: border-box;
-        }
-
-        h2, button, div { font-weight: 100; } 
-
-        #title { 
-            margin: 20px 0; 
-            font-size: 28px; 
-            letter-spacing: 2px; 
-            text-transform: lowercase; 
-        }
+        body { display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 20px); padding-bottom: env(safe-area-inset-bottom, 30px); box-sizing: border-box; }
+        #title { margin: 20px 0; font-size: 28px; letter-spacing: 2px; text-transform: lowercase; }
         
         #viewer-container, #map-container { 
             width: 92vw; height: 52vh; max-width: 500px; 
             border-radius: 30px; overflow: hidden; position: relative; 
-            border: 1px solid #eeeeee; 
-            background: #f9f9f9; 
+            border: 1px solid #eeeeee; background: #f9f9f9; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             display: none; 
         }
 
         #mly, #map { width: 100%; height: 100%; }
         
-        #start-screen, #level-screen { 
-            display: flex; flex-direction: column; align-items: center; 
-            justify-content: center; height: 60vh; width: 100%; 
-        }
+        #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; width: 100%; }
         #level-screen { display: none; }
 
-        .city-btn, .level-btn { 
-            width: 80%; max-width: 260px; padding: 15px; margin: 10px; 
-            font-size: 18px; border-radius: 40px; border: 1px solid #000; 
-            cursor: pointer; background: transparent; color: #000;
-            transition: all 0.3s ease;
-            text-transform: lowercase;
-        }
+        .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; transition: all 0.3s ease; text-transform: lowercase; font-weight: 100; }
         .city-btn:active { background: #000; color: #fff; }
 
         .buttons { display: none; gap: 40px; margin-top: 25px; }
-        .action-btn { 
-            width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; 
-            font-size: 24px; background: #ffffff; color: #000;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .btn-left { color: #ff4b2b; } 
-        .btn-right { color: #45b649; } 
+        .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; box-shadow: 0 5px 15px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; }
+        .btn-left { color: #ff4b2b; } .btn-right { color: #45b649; } 
         
-        .ui-container { 
-            display: flex; flex-direction: column; align-items: center; 
-            width: 100%; margin-top: auto; margin-bottom: 10px;
-        }
-        
-        .btn-ui { 
-            padding: 12px 20px; font-size: 14px; border-radius: 10px; 
-            margin: 5px; border: 1px solid #000; background: transparent; 
-            color: #000; display: none; cursor: pointer; width: 70%; max-width: 220px;
-            text-transform: lowercase;
-        }
+        .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 10px; }
+        .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 10px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; font-weight: 100; }
         
         #home-btn { border-color: #ccc; color: #999; }
-        
         #info { margin-top: 15px; color: #bbbbbb; font-size: 12px; letter-spacing: 1px; text-transform: lowercase; }
-        #loader { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            color: #000; z-index: 5; display: none; font-size: 12px; letter-spacing: 2px;
+        #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #000; z-index: 5; display: none; font-size: 12px; letter-spacing: 2px; }
+
+        /* Popup Styling */
+        .leaflet-popup-content { font-family: "Helvetica Neue", sans-serif; font-weight: 100; text-align: center; }
+        .popup-btn { 
+            display: block; width: 100%; margin: 8px 0; padding: 8px; 
+            border: 1px solid #000; background: white; border-radius: 5px; 
+            cursor: pointer; font-size: 12px; text-transform: lowercase;
         }
+        .popup-btn.green { border-color: #45b649; color: #45b649; }
     </style>
 </head>
 <body>
@@ -140,7 +106,7 @@
             mainz: { minLng: 8.245, maxLng: 8.285, minLat: 49.990, maxLat: 50.015, center: [50.000, 8.265], zoom: 13 }
         };
 
-        let currentCity, mlyViewer, map, currentImgCoords, seenIDs = new Set(), ratings = [];
+        let currentCity, mlyViewer, map, currentImgId, currentImgCoords, seenIDs = new Set(), ratings = [];
         let nextImageId = null, nextImageCoords = null;
 
         const GLOBAL_STORAGE_KEY = 'knowyourcity_all_ratings';
@@ -189,15 +155,15 @@
 
         function useNextImage() {
             if (!nextImageId) return;
-            const id = nextImageId;
+            currentImgId = nextImageId;
             currentImgCoords = nextImageCoords;
-            seenIDs.add(id);
+            seenIDs.add(currentImgId);
             localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify([...seenIDs]));
             if (!mlyViewer) {
-                mlyViewer = new mapillary.Viewer({ accessToken: ACCESS_TOKEN, container: 'mly', imageId: id, component: { cover: false, direction: false, sequence: false } });
+                mlyViewer = new mapillary.Viewer({ accessToken: ACCESS_TOKEN, container: 'mly', imageId: currentImgId, component: { cover: false, direction: false, sequence: false } });
                 mlyViewer.on('image', () => { document.getElementById('loader').style.display = 'none'; findNextImageInBg(); });
             } else {
-                mlyViewer.moveTo(id).then(() => { document.getElementById('loader').style.display = 'none'; findNextImageInBg(); });
+                mlyViewer.moveTo(currentImgId).then(() => { document.getElementById('loader').style.display = 'none'; findNextImageInBg(); });
             }
             document.getElementById('info').innerText = `${ratings.length} orte bewertet`;
             nextImageId = null;
@@ -211,7 +177,7 @@
 
         function handleSwipe(dir) {
             if (currentImgCoords) {
-                ratings.push({ lng: currentImgCoords[0], lat: currentImgCoords[1], color: dir === 'right' ? '#45b649' : '#ff4b2b' });
+                ratings.push({ id: currentImgId, lng: currentImgCoords[0], lat: currentImgCoords[1], color: dir === 'right' ? '#45b649' : '#ff4b2b' });
                 localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(ratings));
             }
             if (nextImageId) useNextImage();
@@ -229,16 +195,49 @@
                 map = L.map('map', { zoomControl: false });
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
+            drawMarkers();
+            setTimeout(() => map.invalidateSize(), 200);
+        }
+
+        function drawMarkers() {
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
             const markerGroup = [];
-            ratings.forEach(p => {
-                L.circleMarker([p.lat, p.lng], { radius: 7, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.8 }).addTo(map);
+            ratings.forEach((p, index) => {
+                const marker = L.circleMarker([p.lat, p.lng], { radius: 7, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.8 }).addTo(map);
+                
+                // Popup Inhalt
+                let popupHtml = `<div><b>Ort bewertet</b><br>`;
+                popupHtml += `<button class="popup-btn" onclick="viewAgain('${p.id}')">ansehen</button>`;
+                if (p.color !== '#45b649') {
+                    popupHtml += `<button class="popup-btn green" onclick="changeRatingToGreen(${index})">♥ herz geben</button>`;
+                }
+                popupHtml += `</div>`;
+                
+                marker.bindPopup(popupHtml);
                 markerGroup.push([p.lat, p.lng]);
             });
             if (markerGroup.length > 0) map.fitBounds(markerGroup, { padding: [50, 50] });
             else map.setView(currentCity.center, currentCity.zoom);
-            setTimeout(() => map.invalidateSize(), 200);
         }
+
+        // Funktion zum erneuten Ansehen des Bildes
+        window.viewAgain = function(id) {
+            backToSwipe();
+            document.getElementById('loader').style.display = 'block';
+            mlyViewer.moveTo(id).then(() => {
+                document.getElementById('loader').style.display = 'none';
+                currentImgId = id; // Update die aktuelle ID
+                // Wir suchen kein neues Bild, da wir uns eines ansehen
+            });
+        };
+
+        // Funktion zum Ändern der Farbe auf Grün
+        window.changeRatingToGreen = function(index) {
+            ratings[index].color = '#45b649';
+            localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(ratings));
+            map.closePopup();
+            drawMarkers(); // Karte neu zeichnen
+        };
 
         function backToSwipe() {
             document.getElementById('map-container').style.display = 'none';
