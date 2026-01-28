@@ -48,9 +48,16 @@
         .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 30px; }
         .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; }
         
+        /* Popup Styling */
         .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; }
         .leaflet-popup-content { margin: 0 !important; width: 250px !important; }
         .popup-img { width: 100%; height: 170px; object-fit: cover; display: block; }
+        
+        .popup-controls { display: flex; width: 100%; height: 50px; border-top: 1px solid #eee; }
+        .popup-vote-btn { flex: 1; border: none; background: white; cursor: pointer; font-size: 18px; transition: background 0.2s; }
+        .popup-vote-btn:active { background: #f0f0f0; }
+        .popup-vote-btn.left { color: #ff4b2b; border-right: 1px solid #eee; }
+        .popup-vote-btn.right { color: #45b649; }
     </style>
 </head>
 <body>
@@ -146,7 +153,7 @@
             document.getElementById('viewer-container').style.display = 'block';
             document.getElementById('action-buttons').style.display = 'flex';
             document.getElementById('end-btn').style.display = 'inline-block';
-            ratings = []; // Reset für die Session
+            ratings = []; 
             initSwipe();
             fetchNewImage();
         }
@@ -161,8 +168,6 @@
                 const data = await res.json();
                 if (data.data && data.data.length > 0) {
                     const imgData = data.data[0];
-                    
-                    // PRE-FETCH: Wir laden das Bild als Blob herunter
                     const imgRes = await fetch(imgData.thumb_1024_url);
                     const blob = await imgRes.blob();
                     const localUrl = URL.createObjectURL(blob);
@@ -185,6 +190,7 @@
         function handleDecision(dir) {
             if (!currentImg) return;
             ratings.push({ 
+                id: Date.now(), // Eindeutige ID für die Bewertung
                 lng: currentImg.coords[0], 
                 lat: currentImg.coords[1], 
                 color: dir === 'right' ? '#45b649' : '#ff4b2b',
@@ -213,14 +219,35 @@
             setTimeout(() => { map.invalidateSize(); renderMarkers(); }, 200);
         }
 
+        // Funktion zum Aktualisieren einer bestehenden Bewertung
+        window.updateRating = function(id, newColor) {
+            const rating = ratings.find(r => r.id === id);
+            if (rating) {
+                rating.color = newColor;
+                renderMarkers();
+                map.closePopup();
+            }
+        };
+
         function renderMarkers() {
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
             const coords = [];
             ratings.forEach(p => {
-                const marker = L.circleMarker([p.lat, p.lng], { radius: 12, fillColor: p.color, color: "#fff", weight: 3, fillOpacity: 1 }).addTo(map);
+                const marker = L.circleMarker([p.lat, p.lng], { 
+                    radius: 12, 
+                    fillColor: p.color, 
+                    color: "#fff", 
+                    weight: 3, 
+                    fillOpacity: 1 
+                }).addTo(map);
                 
-                // Wir nutzen die lokale URL, die wir vorhin mit Blob erstellt haben
-                const content = `<img src="${p.imgUrl}" class="popup-img">`;
+                const content = `
+                    <img src="${p.imgUrl}" class="popup-img">
+                    <div class="popup-controls">
+                        <button class="popup-vote-btn left" onclick="updateRating(${p.id}, '#ff4b2b')">✕</button>
+                        <button class="popup-vote-btn right" onclick="updateRating(${p.id}, '#45b649')">♥</button>
+                    </div>
+                `;
                 marker.bindPopup(content);
                 coords.push([p.lat, p.lng]);
             });
