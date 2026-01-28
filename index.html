@@ -41,15 +41,18 @@
         #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; width: 100%; }
         #level-screen { display: none; }
         .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; text-transform: lowercase; font-weight: 100; }
+        
         .buttons { display: none; gap: 40px; margin-top: 25px; }
         .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        
         .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 30px; }
         .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; font-weight: 100; }
         
+        /* Popup Styling */
         .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; }
         .leaflet-popup-content { margin: 0 !important; width: 250px !important; }
-        .popup-img { width: 100%; height: 170px; object-fit: cover; display: block; pointer-events: none; }
-        .popup-nav { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .popup-img-container { width: 100%; height: 170px; background: #eee; display: flex; align-items: center; justify-content: center; }
+        .popup-img { width: 100%; height: 100%; object-fit: cover; display: block; }
     </style>
 </head>
 <body>
@@ -159,7 +162,7 @@
                 const data = await res.json();
                 if (data.data && data.data.length > 0) {
                     const img = data.data[0];
-                    currentImg = { id: img.id, coords: img.geometry.coordinates, url: img.thumb_2048_url };
+                    currentImg = { id: img.id, coords: img.geometry.coordinates };
                     document.getElementById('static-img').src = img.thumb_2048_url;
                     card.style.transition = 'none';
                     card.style.transform = '';
@@ -171,7 +174,7 @@
 
         function handleDecision(dir) {
             if (!currentImg) return;
-            ratings.push({ id: currentImg.id, lng: currentImg.coords[0], lat: currentImg.coords[1], color: dir === 'right' ? '#45b649' : '#ff4b2b', thumb: currentImg.url });
+            ratings.push({ id: currentImg.id, lng: currentImg.coords[0], lat: currentImg.coords[1], color: dir === 'right' ? '#45b649' : '#ff4b2b' });
             localStorage.setItem('knowyourcity_all_ratings', JSON.stringify(ratings));
             
             card.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
@@ -197,45 +200,22 @@
         }
 
         function renderMarkers() {
-            // Karte leeren
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
-            
             const coords = [];
             ratings.forEach(p => {
-                const marker = L.circleMarker([p.lat, p.lng], { 
-                    radius: 10, 
-                    fillColor: p.color, 
-                    color: "#fff", 
-                    weight: 2, 
-                    fillOpacity: 0.9 
-                }).addTo(map);
-
-                // FIX: Wir bauen eine robuste URL, die direkt auf den Mapillary-Proxy zugreift
-                // Das verhindert das "Fragezeichen"-Problem durch abgelaufene Tokens
+                const marker = L.circleMarker([p.lat, p.lng], { radius: 10, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(map);
+                
+                // STABILE URL LOGIK FÜR POPUPS
                 const robustThumbUrl = `https://images.mapillary.com/${p.id}/thumb-640.jpg`;
-
                 const content = `
-                    <div style="width:250px; min-height:170px; background:#f0f0f0; display:flex; align-items:center; justify-content:center;">
-                        <img src="${robustThumbUrl}" 
-                             class="popup-img" 
-                             onerror="this.src='https://images.mapillary.com/${p.id}/thumb-320.jpg'; this.onerror=null;"
-                             style="width:100%; height:170px; object-fit:cover; display:block;">
+                    <div class="popup-img-container">
+                        <img src="${robustThumbUrl}" class="popup-img" onerror="this.src='https://images.mapillary.com/${p.id}/thumb-320.jpg'">
                     </div>
                 `;
-                
-                marker.bindPopup(content, {
-                    maxWidth: 250,
-                    minWidth: 250,
-                    className: 'custom-popup'
-                });
-
+                marker.bindPopup(content);
                 coords.push([p.lat, p.lng]);
             });
-
-            if (coords.length > 0) {
-                map.fitBounds(coords, { padding: [50, 50] });
-            }
-        }
+            if (coords.length > 0) map.fitBounds(coords, { padding: [50, 50] });
         }
 
         function backToSwipe() {
