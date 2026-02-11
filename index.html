@@ -2,78 +2,186 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Knowyourcity</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowyourcity - Desktop Edition</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     
     <style>
+        /* --- GRUNDLAYOUT FÜR 1920x1080 --- */
         html, body { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; position: fixed; 
-            background: #ffffff; color: #000; 
+            overflow: hidden; 
+            background: #f0f2f5; /* Leichter Grauton für Desktop-Look */
+            color: #1a1a1a; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            font-weight: 200; 
+            font-weight: 300; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
         }
 
-        body { display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 20px); box-sizing: border-box; }
-        #title { margin: 20px 0; font-size: 28px; letter-spacing: 2px; text-transform: lowercase; }
+        #title { 
+            font-size: 42px; 
+            letter-spacing: 4px; 
+            text-transform: uppercase; 
+            font-weight: 800;
+            margin-bottom: 40px;
+            color: #333;
+        }
         
-        #viewer-container { 
-            width: 92vw; height: 52vh; max-width: 500px; 
-            border-radius: 30px; position: relative; 
-            display: none; perspective: 1000px;
+        /* --- CONTAINER STYLES --- */
+        #viewer-container, #map-container { 
+            /* Fixierte Größe für Desktop-Ästhetik statt Vollbild */
+            width: 450px; 
+            height: 650px; 
+            border-radius: 20px; 
+            position: relative; 
+            display: none; 
+            perspective: 1000px;
+            background: white;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         }
 
         #map-container {
-            width: 92vw; height: 52vh; max-width: 500px; 
-            border-radius: 30px; overflow: hidden; position: relative; 
-            border: 1px solid #eeeeee; background: #f9f9f9; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            display: none;
+            border: 1px solid #ddd;
+            overflow: hidden;
         }
 
         .card { 
             width: 100%; height: 100%; 
             position: absolute; top: 0; left: 0;
-            border-radius: 30px; overflow: hidden;
-            border: 1px solid #eeeeee; background: #f9f9f9; 
+            border-radius: 20px; 
+            overflow: hidden;
+            background: #fff; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             touch-action: none;
+            cursor: grab; /* Zeigt an, dass man ziehen kann */
         }
+        .card:active { cursor: grabbing; }
 
-        /* Das hintere Bild ist leicht verkleinert für den Tiefeneffekt */
         #back-card { z-index: 1; transform: scale(0.95); opacity: 0.8; }
         #top-card { z-index: 2; }
 
         .card img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         
+        /* Swipe Indikatoren */
         #top-card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
         #top-card.swipe-left::after { background: rgba(255, 75, 43, 0.4); opacity: 1; }
         #top-card.swipe-right::after { background: rgba(69, 182, 73, 0.4); opacity: 1; }
 
         #map { width: 100%; height: 100%; }
-        #start-screen, #level-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; width: 100%; }
-        #level-screen { display: none; }
-        .city-btn, .level-btn { width: 80%; max-width: 260px; padding: 15px; margin: 10px; font-size: 18px; border-radius: 40px; border: 1px solid #000; cursor: pointer; background: transparent; text-transform: lowercase; }
+
+        /* --- MENÜ / START SCREEN (GRID LAYOUT) --- */
+        #start-screen { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); /* 4 Spalten */
+            gap: 20px;
+            max-width: 1000px;
+            width: 90%;
+        }
+
+        #level-screen { 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 15px;
+        }
+
+        .city-btn { 
+            padding: 20px; 
+            font-size: 18px; 
+            border-radius: 12px; 
+            border: 1px solid #ccc; 
+            cursor: pointer; 
+            background: white; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            font-weight: 600;
+        }
+
+        .city-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            border-color: #000;
+            background: #fff;
+        }
+
+        .level-btn {
+            width: 300px;
+            padding: 15px;
+            font-size: 16px;
+            border-radius: 30px;
+            border: 1px solid #333;
+            background: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .level-btn:hover { background: #333; color: white; }
         
-        .buttons { display: none; gap: 40px; margin-top: 25px; }
-        .action-btn { width: 75px; height: 75px; border: 1px solid #eeeeee; border-radius: 50%; font-size: 24px; background: #ffffff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        /* --- ACTION BUTTONS --- */
+        .buttons { display: none; gap: 40px; margin-top: 30px; }
+        .action-btn { 
+            width: 80px; height: 80px; 
+            border: none; 
+            border-radius: 50%; 
+            font-size: 32px; 
+            background: #ffffff; 
+            display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+        }
+        .action-btn:hover { transform: scale(1.1); }
+        .action-btn:active { transform: scale(0.95); }
         
-        .ui-container { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: auto; margin-bottom: 30px; }
-        .btn-ui { padding: 12px 20px; font-size: 14px; border-radius: 12px; margin: 5px; border: 1px solid #000; background: transparent; display: none; cursor: pointer; width: 70%; max-width: 220px; text-transform: lowercase; }
+        .ui-container { 
+            position: absolute; 
+            bottom: 30px; 
+            right: 30px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: flex-end; 
+            gap: 10px; 
+        }
+
+        .btn-ui { 
+            padding: 12px 25px; 
+            font-size: 14px; 
+            border-radius: 8px; 
+            border: 1px solid #333; 
+            background: white; 
+            display: none; 
+            cursor: pointer; 
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .btn-ui:hover { background: #333; color: white; }
         
-        .leaflet-popup-content-wrapper { border-radius: 20px; padding: 0; overflow: hidden; }
-        .leaflet-popup-content { margin: 0 !important; width: 250px !important; }
-        .popup-img { width: 100%; height: 170px; object-fit: cover; display: block; }
-        
+        /* Leaflet Popup Styles */
+        .leaflet-popup-content-wrapper { border-radius: 10px; padding: 0; overflow: hidden; }
+        .leaflet-popup-content { margin: 0 !important; width: 300px !important; }
+        .popup-img { width: 100%; height: 200px; object-fit: cover; display: block; }
         .popup-controls { display: flex; width: 100%; height: 50px; border-top: 1px solid #eee; }
-        .popup-vote-btn { flex: 1; border: none; background: white; cursor: pointer; font-size: 18px; }
+        .popup-vote-btn { flex: 1; border: none; background: white; cursor: pointer; font-size: 20px; }
+        .popup-vote-btn:hover { background: #f9f9f9; }
         .popup-vote-btn.left { color: #ff4b2b; border-right: 1px solid #eee; }
         .popup-vote-btn.right { color: #45b649; }
+
+        /* Hinweis für Desktop-Nutzer */
+        .keyboard-hint {
+            position: absolute;
+            bottom: 20px;
+            color: #999;
+            font-size: 12px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -81,17 +189,28 @@
     <h2 id="title">knowyourcity</h2>
 
     <div id="start-screen">
-        <button class="city-btn" onclick="selectCity('stuttgart')">stuttgart</button>
-        <button class="city-btn" onclick="showOffenbachLevels()">offenbach</button>
-        <button class="city-btn" onclick="selectCity('mainz')">mainz</button>
-        <button class="city-btn" onclick="selectCity('weimar')">weimar</button>
+        <button class="city-btn" onclick="selectCity('hamburg')">Hamburg</button>
+        <button class="city-btn" onclick="selectCity('koeln')">Köln</button>
+        <button class="city-btn" onclick="selectCity('hannover')">Hannover</button>
+        <button class="city-btn" onclick="selectCity('berlin')">Berlin</button>
+        
+        <button class="city-btn" onclick="selectCity('frankfurt')">Frankfurt</button>
+        <button class="city-btn" onclick="showOffenbachLevels()">Offenbach</button>
+        <button class="city-btn" onclick="selectCity('karlsruhe')">Karlsruhe</button>
+        <button class="city-btn" onclick="selectCity('stuttgart')">Stuttgart</button>
+        
+        <button class="city-btn" onclick="selectCity('leipzig')">Leipzig</button>
+        <button class="city-btn" onclick="selectCity('dresden')">Dresden</button>
+        <button class="city-btn" onclick="selectCity('nuernberg')">Nürnberg</button>
+        <button class="city-btn" onclick="selectCity('muenchen')">München</button>
     </div>
 
     <div id="level-screen">
-        <button class="level-btn" onclick="selectOffenbachLevel(1)">zentrum</button>
-        <button class="level-btn" onclick="selectOffenbachLevel(2)">stadtgebiet</button>
-        <button class="level-btn" onclick="selectOffenbachLevel(3)">full city</button>
-        <button onclick="location.reload()" style="background:none; border:none; color:#999; margin-top:20px;">← zurück</button>
+        <h3>Offenbach Mode</h3>
+        <button class="level-btn" onclick="selectOffenbachLevel(1)">Zentrum</button>
+        <button class="level-btn" onclick="selectOffenbachLevel(2)">Stadtgebiet</button>
+        <button class="level-btn" onclick="selectOffenbachLevel(3)">Full City</button>
+        <button onclick="location.reload()" style="background:none; border:none; color:#999; margin-top:10px; cursor:pointer;">← Zurück zur Auswahl</button>
     </div>
 
     <div id="viewer-container">
@@ -105,35 +224,56 @@
         <button class="action-btn" style="color:#ff4b2b" onclick="handleDecision('left')">✕</button>
         <button class="action-btn" style="color:#45b649" onclick="handleDecision('right')">♥</button>
     </div>
+    
+    <div class="keyboard-hint" id="kb-hint">Nutze Pfeiltasten: ← Dislike | Like →</div>
 
     <div class="ui-container">
-        <button id="end-btn" class="btn-ui" onclick="finishExploration()">karte anzeigen</button>
-        <button id="back-btn" class="btn-ui" onclick="backToSwipe()">weiter spielen</button>
-        <button id="home-btn" class="btn-ui" onclick="location.href=location.pathname">stadt wechseln</button>
+        <button id="end-btn" class="btn-ui" onclick="finishExploration()">Karte anzeigen</button>
+        <button id="back-btn" class="btn-ui" onclick="backToSwipe()">Weiter spielen</button>
+        <button id="home-btn" class="btn-ui" onclick="location.href=location.pathname">Stadt wechseln</button>
     </div>
 
     <script>
         const ACCESS_TOKEN = 'MLY|25939357002342896|dcc9f85428352280ece926aa4f600e3d';
+        
+        // Erweiterte Städteliste basierend auf dem PDF Bild mit ungefähren Koordinaten
         const CITIES = {
+            hamburg:   { minLng: 9.90, maxLng: 10.10, minLat: 53.50, maxLat: 53.60, center: [53.55, 10.00], zoom: 12 },
+            koeln:     { minLng: 6.90, maxLng: 7.05, minLat: 50.90, maxLat: 51.00, center: [50.93, 6.96], zoom: 12 },
+            hannover:  { minLng: 9.65, maxLng: 9.85, minLat: 52.32, maxLat: 52.42, center: [52.37, 9.73], zoom: 12 },
+            berlin:    { minLng: 13.25, maxLng: 13.55, minLat: 52.45, maxLat: 52.58, center: [52.52, 13.40], zoom: 11 },
+            frankfurt: { minLng: 8.60, maxLng: 8.75, minLat: 50.07, maxLat: 50.15, center: [50.11, 8.68], zoom: 12 },
+            offenbach: { center: [50.105, 8.76], zoom: 13 }, // Spezielle Logik unten
+            karlsruhe: { minLng: 8.35, maxLng: 8.50, minLat: 48.98, maxLat: 49.05, center: [49.00, 8.40], zoom: 13 },
             stuttgart: { minLng: 9.135, maxLng: 9.215, minLat: 48.755, maxLat: 48.810, center: [48.783, 9.18], zoom: 12 },
-            weimar: { minLng: 11.305, maxLng: 11.355, minLat: 50.965, maxLat: 51.002, center: [50.983, 11.328], zoom: 13 },
-            offenbach: { center: [50.105, 8.76], zoom: 13 },
-            mainz: { minLng: 8.230, maxLng: 8.290, minLat: 49.980, maxLat: 50.015, center: [50.000, 8.265], zoom: 13 }
+            leipzig:   { minLng: 12.30, maxLng: 12.45, minLat: 51.28, maxLat: 51.38, center: [51.33, 12.37], zoom: 12 },
+            dresden:   { minLng: 13.65, maxLng: 13.85, minLat: 51.00, maxLat: 51.10, center: [51.05, 13.73], zoom: 12 },
+            nuernberg: { minLng: 11.00, maxLng: 11.15, minLat: 49.40, maxLat: 49.50, center: [49.45, 11.07], zoom: 12 },
+            muenchen:  { minLng: 11.45, maxLng: 11.70, minLat: 48.10, maxLat: 48.20, center: [48.13, 11.58], zoom: 12 }
         };
 
         let currentCity, map, ratings = [];
         let topCardData = null, backCardData = null;
         let hammer;
+        let isAnimating = false;
+
+        // Tastatursteuerung für Desktop
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('viewer-container').style.display === 'block' && !isAnimating) {
+                if (e.key === 'ArrowRight') handleDecision('right');
+                if (e.key === 'ArrowLeft') handleDecision('left');
+            }
+        });
 
         function initSwipe() {
             const el = document.getElementById('top-card');
             if (hammer) hammer.destroy();
             hammer = new Hammer(el);
             hammer.on('pan', (e) => {
+                if (isAnimating) return;
                 el.style.transition = 'none';
                 el.style.transform = `translateX(${e.deltaX}px) rotate(${e.deltaX / 20}deg)`;
                 
-                // Hintergrundkarte skalieren während des Swipes
                 const scale = Math.min(0.95 + (Math.abs(e.deltaX) / 1000), 1);
                 document.getElementById('back-card').style.transform = `scale(${scale})`;
                 document.getElementById('back-card').style.opacity = 0.8 + (Math.abs(e.deltaX) / 1000);
@@ -144,6 +284,7 @@
             });
 
             hammer.on('panend', (e) => {
+                if (isAnimating) return;
                 if (e.deltaX > 120) handleDecision('right');
                 else if (e.deltaX < -120) handleDecision('left');
                 else {
@@ -174,17 +315,18 @@
                     };
                 }
             } catch (e) {}
-            return getMapillaryImage(); // Rekursion falls kein Bild gefunden
+            return getMapillaryImage(); 
         }
 
         async function startEngine() {
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('level-screen').style.display = 'none';
+            document.getElementById('title').style.display = 'none'; // Titel ausblenden beim Spielen
             document.getElementById('viewer-container').style.display = 'block';
             document.getElementById('action-buttons').style.display = 'flex';
             document.getElementById('end-btn').style.display = 'inline-block';
+            document.getElementById('kb-hint').style.display = 'block';
             
-            // Erstes und zweites Bild laden
             topCardData = await getMapillaryImage();
             document.getElementById('top-img').src = topCardData.localUrl;
             initSwipe();
@@ -194,9 +336,9 @@
         }
 
         async function handleDecision(dir) {
-            if (!topCardData) return;
+            if (!topCardData || isAnimating) return;
+            isAnimating = true;
 
-            // Bewertung speichern
             ratings.push({ 
                 id: Date.now(),
                 lng: topCardData.coords[0], 
@@ -205,29 +347,25 @@
                 imgUrl: topCardData.localUrl 
             });
             
-            // Animation für Top Card
             const el = document.getElementById('top-card');
+            el.className = dir === 'right' ? 'card swipe-right' : 'card swipe-left';
             el.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
-            el.style.transform = `translateX(${dir === 'right' ? 600 : -600}px) rotate(${dir === 'right' ? 45 : -45}deg)`;
+            el.style.transform = `translateX(${dir === 'right' ? 800 : -800}px) rotate(${dir === 'right' ? 45 : -45}deg)`;
             el.style.opacity = '0';
             
-            // Nach der Animation: Karten tauschen
             setTimeout(async () => {
-                // Das alte hintere Bild wird das neue vordere
                 topCardData = backCardData;
                 document.getElementById('top-img').src = topCardData.localUrl;
                 
-                // Reset Top Card Position
                 el.style.transition = 'none';
                 el.style.transform = '';
                 el.style.opacity = '1';
                 el.className = 'card';
                 
-                // Reset Back Card Style
                 document.getElementById('back-card').style.transform = 'scale(0.95)';
                 document.getElementById('back-card').style.opacity = '0.8';
 
-                // Neues Hinteres Bild laden
+                isAnimating = false;
                 backCardData = await getMapillaryImage();
                 document.getElementById('back-img').src = backCardData.localUrl;
             }, 400);
@@ -252,13 +390,14 @@
             document.getElementById('viewer-container').style.display = 'none';
             document.getElementById('action-buttons').style.display = 'none';
             document.getElementById('end-btn').style.display = 'none';
+            document.getElementById('kb-hint').style.display = 'none';
             document.getElementById('map-container').style.display = 'block';
             document.getElementById('back-btn').style.display = 'inline-block';
             document.getElementById('home-btn').style.display = 'inline-block';
 
             if (!map) {
-                map = L.map('map', { zoomControl: false });
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+                map = L.map('map', { zoomControl: true });
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
             }
             setTimeout(() => { map.invalidateSize(); renderMarkers(); }, 200);
         }
@@ -272,7 +411,7 @@
             map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
             const coords = [];
             ratings.forEach(p => {
-                const marker = L.circleMarker([p.lat, p.lng], { radius: 12, fillColor: p.color, color: "#fff", weight: 3, fillOpacity: 1 }).addTo(map);
+                const marker = L.circleMarker([p.lat, p.lng], { radius: 10, fillColor: p.color, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(map);
                 marker.bindPopup(`
                     <img src="${p.imgUrl}" class="popup-img">
                     <div class="popup-controls">
@@ -290,6 +429,7 @@
             document.getElementById('viewer-container').style.display = 'block';
             document.getElementById('action-buttons').style.display = 'flex';
             document.getElementById('end-btn').style.display = 'inline-block';
+            document.getElementById('kb-hint').style.display = 'block';
             document.getElementById('back-btn').style.display = 'none';
             document.getElementById('home-btn').style.display = 'none';
         }
