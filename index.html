@@ -14,187 +14,153 @@
         html, body { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             overflow: hidden; 
-            background: #ffffff; 
-            color: #000; 
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-weight: 700; 
+            font-family: sans-serif;
         }
 
-        /* --- STARTBILDSCHIRM (PDF 1:1 NACHBAU) --- */
+        /* --- STARTBILDSCHIRM (DAS 1:1 BILD) --- */
         #start-screen {
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
+            /* HIER DEIN BILD EINFÜGEN: */
+            background-image: url('startseite.jpg'); 
+            background-size: cover;       /* Bild füllt den Screen */
+            background-position: center;  /* Zentriert */
+            background-repeat: no-repeat;
             position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
-        /* "ZURÜCK ZUM TUTORIAL" - Oben Links  */
-        #tutorial-link {
+        /* --- UNSICHTBARES GRID FÜR DIE BUTTONS --- */
+        /* Das Grid liegt genau da, wo deine Städte im Bild stehen */
+        .click-layer {
             position: absolute;
-            top: 40px;
-            left: 50px;
-            font-size: 16px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            cursor: pointer;
-            text-decoration: underline;
-            color: #000;
-        }
-
-        /* Container für die Städte */
-        .city-grid {
+            top: 20%;      /* Abstand von oben anpassen, falls nötig */
+            left: 10%;     /* Abstand von links anpassen */
+            width: 80%;    /* Breite des Button-Bereichs */
+            height: 60%;   /* Höhe des Button-Bereichs */
             display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 4 Spalten für breites Bild */
-            gap: 40px 60px;
-            width: 80%;
-            max-width: 1400px;
-            text-align: left;
+            grid-template-columns: repeat(4, 1fr); /* 4 Spalten: Hamburg, Köln, Hannover, Berlin */
+            grid-template-rows: repeat(3, 1fr);    /* 3 Zeilen */
+            gap: 20px;     /* Abstand zwischen den unsichtbaren Buttons */
         }
 
-        /* Der Button-Look (Nur Text, wie im PDF) */
-        .city-item {
-            font-size: 42px; /* Große Schrift wie auf Plakaten */
-            text-transform: uppercase;
-            background: none;
+        [cite_start]/* Der Zurück-Link oben links [cite: 1] */
+        #tutorial-btn {
+            position: absolute;
+            top: 5%;       /* Anpassen an dein Bild */
+            left: 5%;      /* Anpassen an dein Bild */
+            width: 300px;
+            height: 50px;
+            cursor: pointer;
+            /* background: rgba(255,0,0,0.3); */ /* Zum Testen einkommentieren */
+        }
+
+        .city-trigger {
+            background: transparent; /* Unsichtbar */
             border: none;
             cursor: pointer;
-            padding: 0;
-            margin: 0;
-            color: #000;
-            font-weight: 900;
-            letter-spacing: 1px;
-            transition: color 0.2s, transform 0.2s;
-            text-align: left;
+            /* border: 1px solid red; */ /* <--- LÖSCHEN WENN FERTIG: Zeigt Rahmen zum Ausrichten */
         }
 
-        .city-item:hover {
-            color: #555;
-            transform: scale(1.02);
+        .city-trigger:hover {
+            background: rgba(255, 255, 255, 0.1); /* Leichter Hover-Effekt (optional) */
         }
 
-        /* --- SPIELBEREICH (VERSTECKT AM ANFANG) --- */
+        /* --- SPIEL INTERFACE (Bleibt gleich) --- */
         #game-interface {
-            display: none;
-            width: 100%;
-            height: 100%;
+            display: none; /* Versteckt am Anfang */
+            width: 100%; height: 100%;
+            background: #f4f4f4;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: #f4f4f4; /* Leichtes Grau für Kontrast zum Spiel */
         }
 
         #viewer-container { 
             width: 450px; height: 650px; 
-            border-radius: 20px; 
-            position: relative; 
-            perspective: 1000px;
-            background: white;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            border-radius: 20px; position: relative; perspective: 1000px;
+            background: white; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         }
         
-        /* Karten Styles */
         .card { 
-            width: 100%; height: 100%; 
-            position: absolute; top: 0; left: 0;
-            border-radius: 20px; overflow: hidden;
-            background: #fff; 
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0;
+            border-radius: 20px; overflow: hidden; background: #fff; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
         #back-card { z-index: 1; transform: scale(0.95); opacity: 0.8; }
         #top-card { z-index: 2; cursor: grab; }
-        #top-card:active { cursor: grabbing; }
-        .card img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         
+        .card img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         #top-card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
         #top-card.swipe-left::after { background: rgba(255, 75, 43, 0.4); opacity: 1; }
         #top-card.swipe-right::after { background: rgba(69, 182, 73, 0.4); opacity: 1; }
 
-        /* Controls */
         .buttons { display: flex; gap: 40px; margin-top: 30px; }
-        .action-btn { width: 80px; height: 80px; border-radius: 50%; border: none; font-size: 32px; background: white; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: 0.2s; }
-        .action-btn:hover { transform: scale(1.1); }
-
-        /* Map Container */
-        #map-container {
-            display: none;
-            width: 80%; height: 80%;
-            border-radius: 20px; overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-        }
+        .action-btn { width: 80px; height: 80px; border-radius: 50%; border: none; font-size: 32px; background: white; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        
+        #map-container { display: none; width: 80%; height: 80%; border-radius: 20px; overflow: hidden; }
         #map { width: 100%; height: 100%; }
 
-        /* UI Navigation im Spiel */
         .ui-nav { position: absolute; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
         .btn-ui { padding: 10px 20px; border: 1px solid #000; background: white; cursor: pointer; text-transform: uppercase; font-weight: bold; }
-        .btn-ui:hover { background: #000; color: white; }
-
-        /* Offenbach Level Screen (Minimalistisch) */
+        
+        /* Offenbach Menu (Minimalistisch überlagert) */
         #level-screen {
             display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95);
+            flex-direction: column; align-items: center; justify-content: center; z-index: 100;
         }
         .level-item { font-size: 32px; margin: 15px; background: none; border: none; cursor: pointer; text-transform: uppercase; font-weight: 900; }
-        .level-item:hover { color: #555; }
-
-        /* Leaflet Popups */
+        
+        /* Popup Styles */
         .leaflet-popup-content-wrapper { padding: 0; overflow: hidden; }
         .popup-img { width: 250px; height: 150px; object-fit: cover; }
         .popup-controls { display: flex; height: 40px; }
-        .popup-vote-btn { flex: 1; border: none; background: white; cursor: pointer; font-weight: bold; font-size: 18px; }
+        .popup-vote-btn { flex: 1; border: none; background: white; cursor: pointer; font-size: 18px; }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
-        <div id="tutorial-link" onclick="alert('Tutorial Link Platzhalter')">ZURÜCK ZUM TUTORIAL</div>
+        
+        <div id="tutorial-btn" onclick="alert('Zurück zum Tutorial')"></div>
 
-        <div class="city-grid">
-            <button class="city-item" onclick="selectCity('hamburg')">HAMBURG</button>
-            <button class="city-item" onclick="selectCity('koeln')">KÖLN</button>
-            <button class="city-item" onclick="selectCity('hannover')">HANNOVER</button>
-            <button class="city-item" onclick="selectCity('berlin')">BERLIN</button>
+        <div class="click-layer">
+            <button class="city-trigger" onclick="selectCity('hamburg')" title="Hamburg"></button>
+            <button class="city-trigger" onclick="selectCity('koeln')" title="Köln"></button>
+            <button class="city-trigger" onclick="selectCity('hannover')" title="Hannover"></button>
+            <button class="city-trigger" onclick="selectCity('berlin')" title="Berlin"></button>
             
-            <button class="city-item" onclick="selectCity('frankfurt')">FRANKFURT</button>
-            <button class="city-item" onclick="showOffenbachLevels()">OFFENBACH</button>
-            <button class="city-item" onclick="selectCity('karlsruhe')">KARLSRUHE</button>
-            <button class="city-item" onclick="selectCity('stuttgart')">STUTTGART</button>
+            <button class="city-trigger" onclick="selectCity('frankfurt')" title="Frankfurt"></button>
+            <button class="city-trigger" onclick="showOffenbachLevels()" title="Offenbach"></button>
+            <button class="city-trigger" onclick="selectCity('karlsruhe')" title="Karlsruhe"></button>
+            <button class="city-trigger" onclick="selectCity('stuttgart')" title="Stuttgart"></button>
             
-            <button class="city-item" onclick="selectCity('leipzig')">LEIPZIG</button>
-            <button class="city-item" onclick="selectCity('dresden')">DRESDEN</button>
-            <button class="city-item" onclick="selectCity('nuernberg')">NÜRNBERG</button>
-            <button class="city-item" onclick="selectCity('muenchen')">MÜNCHEN</button>
+            <button class="city-trigger" onclick="selectCity('leipzig')" title="Leipzig"></button>
+            <button class="city-trigger" onclick="selectCity('dresden')" title="Dresden"></button>
+            <button class="city-trigger" onclick="selectCity('nuernberg')" title="Nürnberg"></button>
+            <button class="city-trigger" onclick="selectCity('muenchen')" title="München"></button>
         </div>
     </div>
 
     <div id="level-screen">
-        <h2 style="font-size:40px; text-transform: uppercase; margin-bottom:40px;">OFFENBACH AREA</h2>
+        <h2 style="font-size:40px; text-transform: uppercase;">OFFENBACH AREA</h2>
         <button class="level-item" onclick="selectOffenbachLevel(1)">ZENTRUM</button>
         <button class="level-item" onclick="selectOffenbachLevel(2)">STADTGEBIET</button>
         <button class="level-item" onclick="selectOffenbachLevel(3)">FULL CITY</button>
-        <button class="level-item" onclick="location.reload()" style="font-size: 20px; margin-top: 50px; color: #777;">ZURÜCK</button>
+        <button class="level-item" onclick="location.reload()" style="color:#999; margin-top:50px;">ZURÜCK</button>
     </div>
 
     <div id="game-interface">
-        
         <div id="viewer-container">
             <div id="back-card" class="card"><img id="back-img" src="" alt=""></div>
             <div id="top-card" class="card"><img id="top-img" src="" alt=""></div>
         </div>
-
         <div id="map-container"><div id="map"></div></div>
-
         <div class="buttons" id="action-buttons">
             <button class="action-btn" style="color:#ff4b2b" onclick="handleDecision('left')">✕</button>
             <button class="action-btn" style="color:#45b649" onclick="handleDecision('right')">♥</button>
         </div>
-        
-        <div style="margin-top:20px; color:#999;">Nutze Pfeiltasten oder Maus</div>
-
         <div class="ui-nav">
             <button class="btn-ui" id="btn-show-map" onclick="finishExploration()">KARTE ANZEIGEN</button>
             <button class="btn-ui" id="btn-resume" onclick="backToSwipe()" style="display:none;">WEITER SPIELEN</button>
@@ -205,7 +171,7 @@
     <script>
         const ACCESS_TOKEN = 'MLY|25939357002342896|dcc9f85428352280ece926aa4f600e3d';
 
-        // Koordinaten für alle Städte aus der PDF
+        [cite_start]// Liste aller Städte aus PDF [cite: 2-12]
         const CITIES = {
             hamburg:   { minLng: 9.90, maxLng: 10.10, minLat: 53.50, maxLat: 53.60, center: [53.55, 10.00] },
             koeln:     { minLng: 6.90, maxLng: 7.05, minLat: 50.90, maxLat: 51.00, center: [50.93, 6.96] },
@@ -225,7 +191,6 @@
         let topCardData = null, backCardData = null;
         let hammer, isAnimating = false;
 
-        /* --- STEUERUNG --- */
         document.addEventListener('keydown', (e) => {
             if(document.getElementById('game-interface').style.display === 'flex' && !isAnimating) {
                 if(e.key === 'ArrowRight') handleDecision('right');
@@ -239,7 +204,7 @@
         }
 
         function showOffenbachLevels() {
-            document.getElementById('start-screen').style.display = 'none';
+            // Zeigt das Sub-Menü über dem Hintergrundbild
             document.getElementById('level-screen').style.display = 'flex';
         }
 
@@ -261,17 +226,14 @@
             topCardData = await getMapillaryImage();
             document.getElementById('top-img').src = topCardData.localUrl;
             initSwipe();
-            
             backCardData = await getMapillaryImage();
             document.getElementById('back-img').src = backCardData.localUrl;
         }
 
-        /* --- MAP & LOGIK --- */
         async function getMapillaryImage() {
             const randLng = Math.random() * (currentCity.maxLng - currentCity.minLng) + currentCity.minLng;
             const randLat = Math.random() * (currentCity.maxLat - currentCity.minLat) + currentCity.minLat;
             const url = `https://graph.mapillary.com/images?access_token=${ACCESS_TOKEN}&fields=id,geometry,thumb_1024_url&bbox=${randLng-0.005},${randLat-0.005},${randLng+0.005},${randLat+0.005}&limit=1`;
-            
             try {
                 const res = await fetch(url);
                 const data = await res.json();
@@ -294,7 +256,6 @@
                 el.style.transform = `translateX(${e.deltaX}px) rotate(${e.deltaX/20}deg)`;
                 if (e.deltaX > 50) el.className = 'card swipe-right';
                 else if (e.deltaX < -50) el.className = 'card swipe-left';
-                else el.className = 'card';
             });
             hammer.on('panend', (e) => {
                 if (isAnimating) return;
@@ -307,7 +268,6 @@
         async function handleDecision(dir) {
             if (!topCardData || isAnimating) return;
             isAnimating = true;
-
             ratings.push({ id: Date.now(), lat: topCardData.coords[1], lng: topCardData.coords[0], color: dir === 'right' ? '#45b649' : '#ff4b2b', imgUrl: topCardData.localUrl });
             
             const el = document.getElementById('top-card');
@@ -332,7 +292,6 @@
             document.getElementById('map-container').style.display = 'block';
             document.getElementById('btn-show-map').style.display = 'none';
             document.getElementById('btn-resume').style.display = 'inline-block';
-
             if (!map) {
                 map = L.map('map').setView(currentCity.center || [51.16, 10.45], 13);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
@@ -353,10 +312,15 @@
             const group = [];
             ratings.forEach(r => {
                 const m = L.circleMarker([r.lat, r.lng], { color: '#fff', fillColor: r.color, fillOpacity: 1, radius: 10, weight: 2 }).addTo(map);
-                m.bindPopup(`<img src="${r.imgUrl}" class="popup-img">`);
+                m.bindPopup(`<img src="${r.imgUrl}" class="popup-img"><div class="popup-controls"><button class="popup-vote-btn" onclick="updateRating(${r.id},'#ff4b2b')">✕</button><button class="popup-vote-btn" onclick="updateRating(${r.id},'#45b649')">♥</button></div>`);
                 group.push([r.lat, r.lng]);
             });
             if(group.length) map.fitBounds(group, { padding: [50,50] });
+        }
+        
+        window.updateRating = function(id, col) {
+             const r = ratings.find(x => x.id === id);
+             if(r) { r.color = col; renderMarkers(); map.closePopup(); }
         }
     </script>
 </body>
